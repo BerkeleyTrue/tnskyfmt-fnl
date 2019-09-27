@@ -1,6 +1,6 @@
 (local fmt (require :fennelfmt))
 
-(local cases ["top" "table" "call" "body"])
+(local cases ["top" "table" "call" "body" "misc"])
 
 (var pass 0)
 (var fail 0)

@@ -13,8 +13,9 @@
     (if (= 0 pos) nil
         (= looking-for char) (do (table.remove stack)
                                (identify-line line (- pos 1) stack))
-        (. closers char) (do (table.insert stack (. closers char))
-                           (identify-line line (- pos 1) stack))
+        (and (. closers char)
+             (not= looking-for "\"")) (do (table.insert stack (. closers char))
+                                        (identify-line line (- pos 1) stack))
         ;; if we're looking for a delimiter, skip everything till we find it
         looking-for (identify-line line (- pos 1) stack)
         (or (= "[" char) (= "{" char)) (values :table pos)
