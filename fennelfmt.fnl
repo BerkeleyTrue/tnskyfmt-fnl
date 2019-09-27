@@ -40,8 +40,10 @@
     _ 0))
 
 (fn indent [line lines prev-line-num]
-  (let [without-indentation (or (line:match "[^%s]+.*") "")]
-    (.. (: " " :rep (indentation lines prev-line-num)) without-indentation)))
+  (let [without-indentation (line:match "[^%s]+.*")]
+    (if without-indentation
+        (.. (: " " :rep (indentation lines prev-line-num)) without-indentation)
+        "")))
 
 (fn fmt [code]
   (let [lines []]

@@ -5,3 +5,7 @@
 
 (table.concat []
           " ")
+
+  (call (call 1
+
+          2))
