@@ -11,3 +11,6 @@
 
 ;; this )comment has a ( in it!
 xyz
+
+(let [what-is "a\"quoted string"]
+  this-is-weird)

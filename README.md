@@ -4,6 +4,8 @@ Format your Fennel!
 
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
 
+Right now it is strictly for indentation only.
+
 ## License
 
 Copyright © 2019 Phil Hagelberg and contributors

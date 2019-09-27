@@ -9,18 +9,20 @@
 
 (fn identify-line [line pos stack]
   (let [char (line:sub pos pos)
-        looking-for (. stack (# stack))]
+        looking-for (. stack (# stack))
+        continue #(identify-line line (- pos 1) stack)]
     (if (= 0 pos) nil
+        (= (line:sub (- pos 1) (- pos 1)) :\ ) (continue)
         (= looking-for char) (do (table.remove stack)
                                (identify-line line (- pos 1) stack))
         (and (. closers char)
              (not= looking-for "\"")) (do (table.insert stack (. closers char))
                                         (identify-line line (- pos 1) stack))
         ;; if we're looking for a delimiter, skip everything till we find it
-        looking-for (identify-line line (- pos 1) stack)
+        looking-for (continue)
         (or (= "[" char) (= "{" char)) (values :table pos)
         (= "(" char) (values :call pos line)
-        (identify-line line (- pos 1) stack))))
+        :else (continue))))
 
 (fn identify-indent-type [lines last stack]
   (let [line (: (or (. lines last) "") :gsub ";.*" "")]
@@ -33,6 +35,9 @@
       (_ ? (< 1 last)) (identify-indent-type lines (- last 1) stack))))
 
 (fn indentation [lines prev-line-num]
+  "Return indentation for a line, given a table of lines and a number offset.
+The number indicates the line previous to the current line, which will be
+looked up in the table."
   (match (identify-indent-type lines prev-line-num [])
     ;; three kinds of indentation:
     (:table opening) opening
@@ -47,6 +52,7 @@
         "")))
 
 (fn fmt [code]
+  "Reformat an entire block of code."
   (let [lines []]
     (each [line (code:gmatch "([^\n]*)\n")]
       (table.insert lines (indent line lines (# lines))))
