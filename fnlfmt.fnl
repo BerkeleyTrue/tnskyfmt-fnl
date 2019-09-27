@@ -1,6 +1,6 @@
 (local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
                       "do" true "eval-compiler" true "for" true "each" true
-                      "while" true "macro" true "match" true})
+                      "while" true "macro" true "match" true "doto" true})
 
 (local closers {")" "(" "]" "[" "}" "{" "\"" "\""})
 
@@ -16,6 +16,7 @@
         (= looking-for char) (do (table.remove stack)
                                (identify-line line (- pos 1) stack))
         (and (. closers char)
+             ;; TODO: backslashed delimiters aren't consistently handled
              (not= looking-for "\"")) (do (table.insert stack (. closers char))
                                         (identify-line line (- pos 1) stack))
         ;; if we're looking for a delimiter, skip everything till we find it
@@ -25,6 +26,7 @@
         :else (continue))))
 
 (fn identify-indent-type [lines last stack]
+  ;; TODO: this gives us some false positives with semicolons in strings
   (let [line (: (or (. lines last) "") :gsub ";.*" "")]
     (match (identify-line line (# line) stack)
       (:table pos) (values :table pos)

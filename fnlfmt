@@ -12,7 +12,7 @@
   (print "Usage: fnlfmt FILENAME")
   (print "Prints the reformatted file to standard out."))
 
-(if (or (= (# arg) 0)
+(if (or (not= (# arg) 1)
         (. {"--help" "-h" "-?" "help"} (. arg 1)))
     (help)
     (format (. arg 1)))
