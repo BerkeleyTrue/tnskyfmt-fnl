@@ -8,3 +8,6 @@
                 (: :gsub "%{ " "{") (: :gsub " %}" "}")
                 (: :gsub "%( " "(") (: :gsub " %)" ")"))]
     ret))
+
+;; this )comment has a ( in it!
+xyz

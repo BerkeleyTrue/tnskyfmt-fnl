@@ -23,7 +23,7 @@
         (identify-line line (- pos 1) stack))))
 
 (fn identify-indent-type [lines last stack]
-  (let [line (or (. lines last) "")]
+  (let [line (: (or (. lines last) "") :gsub ";.*" "")]
     (match (identify-line line (# line) stack)
       (:table pos) (values :table pos)
       (:call pos line) (let [function-name (symbol-at line (+ pos 1))]
