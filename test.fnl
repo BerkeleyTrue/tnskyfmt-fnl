@@ -1,4 +1,4 @@
-(local fmt (require :fennelfmt))
+(local fmt (require :fnlfmt))
 
 (local cases ["top" "table" "call" "body" "misc"])
 
