@@ -1,31 +1,55 @@
-(local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
-                      "do" true "eval-compiler" true "for" true "each" true
-                      "while" true "macro" true "match" true "doto" true})
-
-(local closers {")" "(" "]" "[" "}" "{" "\"" "\""})
-
-(fn symbol-at [line pos]
-  (: (line:sub pos) :match "[^%s]+"))
+;; Roughly the strategy is to find whether the current line is part of a table,
+;; a "body" special form call, a regular function call, or none of the above.
+;; Each of these are indented differently.
+;;
+;; Examples:
+;;
+;; (local table-type {:a 1
+;;                   :b 2
+;;                   :c 3})
+;;
+;; (when body-type?
+;;   (print "This form is indented in body type."))
+;;
+;; (local regular-call (this-is indented-as
+;;                              a-regular "function call"))
+;;
+;; "this is none of the above."
 
 (fn identify-line [line pos stack]
-  (let [char (line:sub pos pos)
+  "For the given line, identify the kind of form it opens, if any.
+Returns nil if the given line doesn't open any form; in that case the caller
+should continue looking to previous lines."
+  (let [closers {")" "(" "]" "[" "}" "{" "\"" "\""}
+        char (line:sub pos pos)
         looking-for (. stack (# stack))
         continue #(identify-line line (- pos 1) stack)]
     (if (= 0 pos) nil
         (= (line:sub (- pos 1) (- pos 1)) :\ ) (continue)
-        (= looking-for char) (do (table.remove stack)
-                               (identify-line line (- pos 1) stack))
+        (= looking-for char) (do (table.remove stack) (continue))
         (and (. closers char)
              ;; TODO: backslashed delimiters aren't consistently handled
              (not= looking-for "\"")) (do (table.insert stack (. closers char))
-                                        (identify-line line (- pos 1) stack))
+                                        (continue))
         ;; if we're looking for a delimiter, skip everything till we find it
         looking-for (continue)
         (or (= "[" char) (= "{" char)) (values :table pos)
         (= "(" char) (values :call pos line)
         :else (continue))))
 
+(fn symbol-at [line pos]
+  (: (line:sub pos) :match "[^%s]+"))
+
+;; Some special forms have their own indentation rules, but specials which
+;; aren't on this list are indented like normal function calls.
+(local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
+                      "do" true "eval-compiler" true "for" true "each" true
+                      "while" true "macro" true "match" true "doto" true})
+
 (fn identify-indent-type [lines last stack]
+  "Distinguish between forms that are part of a table vs a function call.
+This function iterates backwards thru a table of lines to find where the current
+form begins. Also returns details about the position in the line."
   ;; TODO: this gives us some false positives with semicolons in strings
   (let [line (: (or (. lines last) "") :gsub ";.*" "")]
     (match (identify-line line (# line) stack)
@@ -38,8 +62,8 @@
 
 (fn indentation [lines prev-line-num]
   "Return indentation for a line, given a table of lines and a number offset.
-The number indicates the line previous to the current line, which will be
-looked up in the table."
+The prev-line-num indicates the line previous to the current line, which will be
+looked up in the table of lines. The number returned is the column to indent to."
   (match (identify-indent-type lines prev-line-num [])
     ;; three kinds of indentation:
     (:table opening) opening
