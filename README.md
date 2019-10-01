@@ -10,6 +10,11 @@ your column lengths at 80 or under, so please do that.
 For contributions, send patches directly to the maintainer or the
 [Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel)
 
+## Known issues
+
+Multi-line strings containing semicolons or delimiters may result in
+incorrect indentation in certain situations.
+
 ## License
 
 Copyright © 2019 Phil Hagelberg and contributors

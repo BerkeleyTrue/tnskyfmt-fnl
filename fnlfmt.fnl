@@ -51,12 +51,19 @@ should continue looking to previous lines."
                       "do" true "eval-compiler" true "for" true "each" true
                       "while" true "macro" true "match" true "doto" true})
 
+(fn remove-comment [line in-string? pos]
+  (if (< (# line) pos) line
+      (= (line:sub pos pos) "\"")
+      (remove-comment line (not in-string?) (+ pos 1))
+      (and (= (line:sub pos pos) ";") (not in-string?))
+      (line:sub 1 (- pos 1)) ; could hit false positives in multi-line strings
+      (remove-comment line in-string? (+ pos 1))))
+
 (fn identify-indent-type [lines last stack]
   "Distinguish between forms that are part of a table vs a function call.
 This function iterates backwards thru a table of lines to find where the current
 form begins. Also returns details about the position in the line."
-  ;; TODO: this gives us some false positives with semicolons in strings
-  (let [line (: (or (. lines last) "") :gsub ";.*" "")]
+  (let [line (remove-comment (or (. lines last) "") false 1)]
     (match (identify-line line (# line) stack)
       (:table pos) (values :table pos)
       (:call pos line) (let [function-name (symbol-at line (+ pos 1))]
