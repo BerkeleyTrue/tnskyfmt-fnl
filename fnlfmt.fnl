@@ -5,8 +5,8 @@
 ;; Examples:
 ;;
 ;; (local table-type {:a 1
-;;                   :b 2
-;;                   :c 3})
+;;                    :b 2
+;;                    :c 3})
 ;;
 ;; (when body-type?
 ;;   (print "This form is indented in body type."))
@@ -25,15 +25,20 @@ should continue looking to previous lines."
         looking-for (. stack (# stack))
         continue #(identify-line line (- pos 1) stack)]
     (if (= 0 pos) nil
+        ;; TODO: backslashed delimiters aren't consistently handled
         (= (line:sub (- pos 1) (- pos 1)) :\ ) (continue)
+        ;; if we find the delimiter we're looking for, stop looking
         (= looking-for char) (do (table.remove stack) (continue))
+        ;; if we find a new form, start looking for the delimiter that begins it
         (and (. closers char)
-             ;; TODO: backslashed delimiters aren't consistently handled
+             ;; (unless we're already in a string)
              (not= looking-for "\"")) (do (table.insert stack (. closers char))
                                         (continue))
         ;; if we're looking for a delimiter, skip everything till we find it
         looking-for (continue)
+        ;; if we hit an opening table char, we're in a table!
         (or (= "[" char) (= "{" char)) (values :table pos)
+        ;; if we hit an open paren, we're in a call!
         (= "(" char) (values :call pos line)
         :else (continue))))
 
@@ -63,7 +68,7 @@ form begins. Also returns details about the position in the line."
 (fn indentation [lines prev-line-num]
   "Return indentation for a line, given a table of lines and a number offset.
 The prev-line-num indicates the line previous to the current line, which will be
-looked up in the table of lines. The number returned is the column to indent to."
+looked up in the table of lines. Returns the column number to indent to."
   (match (identify-indent-type lines prev-line-num [])
     ;; three kinds of indentation:
     (:table opening) opening
