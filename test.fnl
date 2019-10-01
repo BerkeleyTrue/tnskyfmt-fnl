@@ -20,12 +20,11 @@
   (print actual))
 
 (each [_ name (ipairs cases)]
-  (let [before (read (.. "tests/" name ".fnl"))
-        after (read (.. "tests/" name "-fixed.fnl"))
-        actual (.. (fmt.fmt before) "\n")]
-    (if (= actual after)
+  (let [expected (read (.. "tests/" name ".fnl"))
+        actual (.. (fmt.fmt expected) "\n")]
+    (if (= actual expected)
         (set pass (+ pass 1))
-        (failed after actual))))
+        (failed expected actual))))
 
 (print (: "%s passed, %s failed" :format pass fail))
 (os.exit fail)
