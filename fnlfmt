@@ -3,7 +3,9 @@
 (local fmt (require :fnlfmt))
 
 (fn format [filename]
-  (let [f (assert (io.open filename :r) "File not found.")
+  (let [f (match filename
+            :- io.stdin
+            _ (assert (io.open filename :r) "File not found."))
         contents (f:read :*all)]
     (f:close)
     (print (fmt.fmt contents))))
