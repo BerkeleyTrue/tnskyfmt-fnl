@@ -1,20 +1,132 @@
-#!/usr/bin/env fennel
-
-(local fmt (require :fnlfmt))
-
-(fn format [filename]
-  (let [f (match filename
-            :- io.stdin
-            _ (assert (io.open filename :r) "File not found."))
-        contents (f:read :*all)]
-    (f:close)
-    (print (fmt.fmt contents))))
-
-(fn help []
-  (print "Usage: fnlfmt FILENAME")
-  (print "Prints the reformatted file to standard out."))
-
-(if (or (not= (# arg) 1)
-        (. {"--help" "-h" "-?" "help"} (. arg 1)))
-    (help)
-    (format (. arg 1)))
+#!/usr/bin/env lua
+local fmt = nil
+package.preload["fnlfmt"] = package.preload["fnlfmt"] or function()
+  local function identify_line(line, pos, stack)
+    local closers = {[")"] = "(", ["\""] = "\"", ["]"] = "[", ["}"] = "{"}
+    local char = line:sub(pos, pos)
+    local looking_for = stack[#stack]
+    local continue = nil
+    local function _0_()
+      return identify_line(line, (pos - 1), stack)
+    end
+    continue = _0_
+    if (0 == pos) then
+      return nil
+    elseif (line:sub((pos - 1), (pos - 1)) == "\\") then
+      return continue()
+    elseif (looking_for == char) then
+      table.remove(stack)
+      return continue()
+    elseif (closers[char] and (looking_for ~= "\"")) then
+      table.insert(stack, closers[char])
+      return continue()
+    elseif looking_for then
+      return continue()
+    elseif (("[" == char) or ("{" == char)) then
+      return "table", pos
+    elseif ("(" == char) then
+      return "call", pos, line
+    elseif "else" then
+      return continue()
+    end
+  end
+  local function symbol_at(line, pos)
+    return line:sub(pos):match("[^%s]+")
+  end
+  local body_specials = {["\206\187"] = true, ["do"] = true, ["eval-compiler"] = true, ["for"] = true, ["while"] = true, doto = true, each = true, fn = true, lambda = true, let = true, macro = true, match = true, when = true}
+  local function remove_comment(line, in_string_3f, pos)
+    if (#line < pos) then
+      return line
+    elseif (line:sub(pos, pos) == "\"") then
+      return remove_comment(line, not in_string_3f, (pos + 1))
+    elseif ((line:sub(pos, pos) == ";") and not in_string_3f) then
+      return line:sub(1, (pos - 1))
+    else
+      return remove_comment(line, in_string_3f, (pos + 1))
+    end
+  end
+  local function identify_indent_type(lines, last, stack)
+    local line = remove_comment((lines[last] or ""), false, 1)
+    local _0_0, _1_0, _2_0 = identify_line(line, #line, stack)
+    if ((_0_0 == "table") and (nil ~= _1_0)) then
+      local pos = _1_0
+      return "table", pos
+    elseif ((_0_0 == "call") and (nil ~= _1_0) and (_2_0 == line)) then
+      local pos = _1_0
+      local function_name = symbol_at(line, (pos + 1))
+      if body_specials[function_name] then
+        return "body-special", (pos - 1)
+      else
+        return "call", (pos - 1), function_name
+      end
+    else
+      local _3_
+      do
+        local _ = _0_0
+        _3_ = (true and (1 < last))
+      end
+      if _3_ then
+        local _ = _0_0
+        return identify_indent_type(lines, (last - 1), stack)
+      end
+    end
+  end
+  local function indentation(lines, prev_line_num)
+    local _0_0, _1_0, _2_0 = identify_indent_type(lines, prev_line_num, {})
+    if ((_0_0 == "table") and (nil ~= _1_0)) then
+      local opening = _1_0
+      return opening
+    elseif ((_0_0 == "body-special") and (nil ~= _1_0)) then
+      local prev_indent = _1_0
+      return (prev_indent + 2)
+    elseif ((_0_0 == "call") and (nil ~= _1_0) and (nil ~= _2_0)) then
+      local prev_indent = _1_0
+      local function_name = _2_0
+      return (prev_indent + #function_name + 2)
+    else
+      local _ = _0_0
+      return 0
+    end
+  end
+  local function indent(line, lines, prev_line_num)
+    local without_indentation = line:match("[^%s]+.*")
+    if without_indentation then
+      return ((" "):rep(indentation(lines, prev_line_num)) .. without_indentation)
+    else
+      return ""
+    end
+  end
+  local function fmt(code)
+    local lines = {}
+    for line in code:gmatch("([^\n]*)\n") do
+      table.insert(lines, indent(line, lines, #lines))
+    end
+    return table.concat(lines, "\n")
+  end
+  return {fmt = fmt, indentation = indentation}
+end
+fmt = require("fnlfmt")
+local function format(filename)
+  local f = nil
+  do
+    local _0_0 = filename
+    if (_0_0 == "-") then
+      f = io.stdin
+    else
+      local _ = _0_0
+      f = assert(io.open(filename, "r"), "File not found.")
+    end
+  end
+  local contents = f:read("*all")
+  f:close()
+  return print(fmt.fmt(contents))
+end
+local function help()
+  print("Usage: fnlfmt FILENAME")
+  return print("Prints the reformatted file to standard out.")
+end
+if ((#arg ~= 1) or ({["--help"] = "-h", ["-?"] = "help"})[arg[1]]) then
+  return help()
+else
+  return format(arg[1])
+end

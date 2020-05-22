@@ -1,5 +1,12 @@
-SRC = fnlfmt.fnl fnlfmt test.fnl
+SRC = fnlfmt.fnl cli.fnl test.fnl
 
-test: ; fennel test.fnl
+fnlfmt: cli.fnl
+	echo "#!/usr/bin/env lua" > $@
+	fennel --compile --require-as-include $< >> $@
+	chmod +x fnlfmt
+
+test: fnlfmt ; fennel test.fnl
 count: ; cloc fnlfmt.fnl
-roundtrip: ; @for file in $(SRC) ; do ./fnlfmt $$file | diff -u $$file - ; done
+roundtrip: fnlfmt ; @for file in $(SRC) ; do ./fnlfmt $$file | diff -u $$file - ; done
+
+.PHONY: test count roundtrip
