@@ -1,3 +1,5 @@
+(local view (require :fennelview))
+
 ;; Roughly the strategy is to find whether the current line is part of a table,
 ;; a "body" special form call, a regular function call, or none of the above.
 ;; Each of these are indented differently.
@@ -83,17 +85,86 @@ looked up in the table of lines. Returns the column number to indent to."
     (:call prev-indent function-name) (+ prev-indent (# function-name) 2)
     _ 0))
 
-(fn indent [line lines prev-line-num]
+(fn indent-line [line lines prev-line-num]
   (let [without-indentation (line:match "[^%s]+.*")]
     (if without-indentation
         (.. (: " " :rep (indentation lines prev-line-num)) without-indentation)
         "")))
 
-(fn fmt [code]
+(fn indent [code]
   "Reformat an entire block of code."
   (let [lines []]
     (each [line (code:gmatch "([^\n]*)\n")]
-      (table.insert lines (indent line lines (# lines))))
+      (table.insert lines (indent-line line lines (# lines))))
     (table.concat lines "\n")))
 
-{:fmt fmt :indentation indentation}
+(local newline (setmetatable {} {:__fennelview #"\n"}))
+
+(fn nospace-concat [tbl sep start end]
+  (var out "")
+  (for [i start end]
+    (let [val (. tbl i)]
+      (if (or (= i start) (= val "\n"))
+          (set out (.. out val))
+          (set out (.. out " " val)))))
+  out)
+
+(local nil-sym (setmetatable {} {:__fennelview #"nil"}))
+
+;; regular fennelview for lists splices in a string in between every value but
+;; we need to suppress the string if it happens at the end of a line!
+(fn view-list [self tostring2]
+  (var (safe max) (values {} 0))
+  (each [k (pairs self)]
+    (when (and (= (type k) "number") (> k max))
+      (set max k)))
+  (let [ts (or tostring2 tostring)]
+    (for [i 1 max 1]
+      (tset safe i (ts (if (= (. self i) nil) nil-sym (. self i))))))
+  (.. "(" (nospace-concat safe " " 1 max) ")"))
+
+(local list-mt {:__fennelview view-list})
+
+(fn walk-tree [root f iterator]
+  (fn walk [iterfn parent idx node]
+    (when (f idx node parent)
+      (each [k v (iterfn node)]
+        (walk iterfn node k v))))
+  (walk (or iterator pairs) nil nil root)
+  root)
+
+(fn step-for [[callee]]
+  (if (. {:match true} (tostring callee))
+      -2
+      -1))
+
+(fn end-for [node]
+  (if (= (tostring (. node 1)) :match)
+      (- (# node) 1)
+      (# node)))
+
+(fn start-for [[callee]]
+  (. {:fn 4 :match 3 :do 2 :let 3 :when 3 :if 3
+      :while 3 :each 3 :for 3} (tostring callee)))
+
+(fn add-newlines [idx node parent]
+  (when (= :table (type node))
+    (let [mt (or (getmetatable node) [])]
+      (match mt
+        [:LIST] (do
+                  (setmetatable node list-mt)
+                  (when (start-for node)
+                    (for [i (end-for node) (start-for node) (step-for node)]
+                      (table.insert node i newline))))
+        ;; let bindings are the only square-bracket tables that need newlines
+        {: sequence} (when (= :let (-> parent (. 1) tostring))
+                       (for [i (- (# node) 1) 2 -2]
+                         (table.insert node i newline)))))
+    true))
+
+(fn fnlfmt [ast options]
+  (indent (.. (view (walk-tree ast add-newlines) {:table-edges false
+                                                  :empty-as-square true})
+              "\n\n")))
+
+{: fnlfmt : indentation}
