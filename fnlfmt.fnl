@@ -113,7 +113,7 @@ looked up in the table of lines. Returns the column number to indent to."
 
 ;; regular fennelview for lists splices in a string in between every value but
 ;; we need to suppress the string if it happens at the end of a line!
-(fn view-list [self tostring2]
+(fn view-list [open close self tostring2]
   (var (safe max) (values {} 0))
   (each [k (pairs self)]
     (when (and (= (type k) "number") (> k max))
@@ -121,9 +121,11 @@ looked up in the table of lines. Returns the column number to indent to."
   (let [ts (or tostring2 tostring)]
     (for [i 1 max 1]
       (tset safe i (ts (if (= (. self i) nil) nil-sym (. self i))))))
-  (.. "(" (nospace-concat safe " " 1 max) ")"))
+  (.. open (nospace-concat safe " " 1 max) close))
 
-(local list-mt {:__fennelview view-list})
+;; TODO: same as above but for binding tables
+
+(local list-mt {:__fennelview (partial view-list "(" ")")})
 
 (fn walk-tree [root f iterator]
   (fn walk [iterfn parent idx node]
@@ -158,6 +160,7 @@ looked up in the table of lines. Returns the column number to indent to."
                       (table.insert node i newline))))
         ;; let bindings are the only square-bracket tables that need newlines
         {: sequence} (when (= :let (-> parent (. 1) tostring))
+                       (set mt.__fennelview (partial view-list "[" "]"))
                        (for [i (- (# node) 1) 2 -2]
                          (table.insert node i newline)))))
     true))

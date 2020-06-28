@@ -1,6 +1,6 @@
 SRC = fnlfmt.fnl cli.fnl test.fnl
 
-fnlfmt: cli.fnl fnlfmt.fnl indent.fnl
+fnlfmt: cli.fnl fnlfmt.fnl
 	echo "#!/usr/bin/env lua" > $@
 	fennel --require-as-include --compile $< >> $@
 	chmod +x fnlfmt

@@ -125,7 +125,7 @@ package.preload["fnlfmt"] = package.preload["fnlfmt"] or function(...)
     return "nil"
   end
   nil_sym = setmetatable({}, {__fennelview = _1_})
-  local function view_list(self, tostring2)
+  local function view_list(open, close, self, tostring2)
     local safe, max = {}, 0
     for k in pairs(self) do
       if ((type(k) == "number") and (k > max)) then
@@ -145,9 +145,13 @@ package.preload["fnlfmt"] = package.preload["fnlfmt"] or function(...)
         safe[i] = ts(_2_())
       end
     end
-    return ("(" .. nospace_concat(safe, " ", 1, max) .. ")")
+    return (open .. nospace_concat(safe, " ", 1, max) .. close)
   end
-  local list_mt = {__fennelview = view_list}
+  local list_mt = nil
+  local function _2_(...)
+    return view_list("(", ")", ...)
+  end
+  list_mt = {__fennelview = _2_}
   local function walk_tree(root, f, iterator)
     local function walk(iterfn, parent, idx, node)
       if f(idx, node, parent) then
@@ -160,9 +164,9 @@ package.preload["fnlfmt"] = package.preload["fnlfmt"] or function(...)
     walk((iterator or pairs), nil, nil, root)
     return root
   end
-  local function step_for(_2_0)
-    local _3_ = _2_0
-    local callee = _3_[1]
+  local function step_for(_3_0)
+    local _4_ = _3_0
+    local callee = _4_[1]
     if ({match = true})[tostring(callee)] then
       return -2
     else
@@ -176,26 +180,30 @@ package.preload["fnlfmt"] = package.preload["fnlfmt"] or function(...)
       return #node
     end
   end
-  local function start_for(_3_0)
-    local _4_ = _3_0
-    local callee = _4_[1]
+  local function start_for(_4_0)
+    local _5_ = _4_0
+    local callee = _5_[1]
     return ({["do"] = 2, ["for"] = 3, ["if"] = 3, ["while"] = 3, each = 3, fn = 4, let = 3, match = 3, when = 3})[tostring(callee)]
   end
   local function add_newlines(idx, node, parent)
     if ("table" == type(node)) then
       do
         local mt = (getmetatable(node) or {})
-        local _4_0 = mt
-        if ((type(_4_0) == "table") and (_4_0[1] == "LIST")) then
+        local _5_0 = mt
+        if ((type(_5_0) == "table") and (_5_0[1] == "LIST")) then
           setmetatable(node, list_mt)
           if start_for(node) then
             for i = end_for(node), start_for(node), step_for(node) do
               table.insert(node, i, newline)
             end
           end
-        elseif ((type(_4_0) == "table") and (nil ~= _4_0.sequence)) then
-          local sequence = _4_0.sequence
+        elseif ((type(_5_0) == "table") and (nil ~= _5_0.sequence)) then
+          local sequence = _5_0.sequence
           if ("let" == tostring(parent[1])) then
+            local function _6_(...)
+              return view_list("[", "]", ...)
+            end
+            mt.__fennelview = _6_
             for i = (#node - 1), 2, -2 do
               table.insert(node, i, newline)
             end
@@ -208,7 +216,7 @@ package.preload["fnlfmt"] = package.preload["fnlfmt"] or function(...)
   local function fnlfmt(ast, options)
     return indent((view(walk_tree(ast, add_newlines), {["empty-as-square"] = true, ["table-edges"] = false}) .. "\n\n"))
   end
-  return {["indent-line"] = indent_line, fnlfmt = fnlfmt, indent = indent}
+  return {fnlfmt = fnlfmt, indentation = indentation}
 end
 package.preload["fennelview"] = package.preload["fennelview"] or function(...)
   local function view_quote(str)
