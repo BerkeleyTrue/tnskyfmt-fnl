@@ -51,7 +51,8 @@ should continue looking to previous lines."
 ;; aren't on this list are indented like normal function calls.
 (local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
                       "do" true "eval-compiler" true "for" true "each" true
-                      "while" true "macro" true "match" true "doto" true})
+                      "while" true "macro" true "match" true "doto" true
+                      "with-open" true})
 
 (fn remove-comment [line in-string? pos]
   (if (< (# line) pos) line
@@ -145,9 +146,15 @@ looked up in the table of lines. Returns the column number to indent to."
       (- (# node) 1)
       (# node)))
 
-(fn start-for [[callee]]
-  (. {:fn 4 :match 3 :do 2 :let 3 :when 3 :if 3
-      :while 3 :each 3 :for 3} (tostring callee)))
+(fn anonymous-fn? [[callee name-org-arglist]]
+  (and (= :fn (tostring callee))
+       (not (match (getmetatable name-org-arglist)
+              [which] (= which :SYMBOL)))))
+
+(fn start-for [form]
+  (if (anonymous-fn? form) 3
+      (. {:fn 4 :match 3 :do 2 :let 3 :when 3 :if 3
+          :while 3 :each 3 :for 3} (tostring (. form 1)))))
 
 (fn add-newlines [idx node parent]
   (when (= :table (type node))

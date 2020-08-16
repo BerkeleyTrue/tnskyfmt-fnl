@@ -4,9 +4,6 @@
 
 (local *macros* {})
 
-;; internal utils
-(fn warn [msg ...] (io.stderr:write (.. "Warning: " msg "\n")) ...)
-
 ;; macros
 
 (fn *macros*.pretty-macrodebug [expr return-string?]
