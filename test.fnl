@@ -21,7 +21,7 @@
 
 (each [_ name (ipairs cases)]
   (let [expected (read (.. "tests/" name ".fnl"))
-        actual (.. (fmt.fmt expected) "\n")]
+        actual (.. (fmt.fnlfmt expected) "\n")]
     (if (= actual expected)
         (set pass (+ pass 1))
         (failed expected actual))))
