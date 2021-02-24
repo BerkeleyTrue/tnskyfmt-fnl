@@ -2,6 +2,9 @@
 
 Format your Fennel!
 
+Note that this is somewhat of a work in progress and should not at
+this point be considered authoritative on how to format Fennel code.
+
 ## Usage
 
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
@@ -20,7 +23,7 @@ incorrect indentation in certain situations.
 
 ## License
 
-Copyright © 2019-2020 Phil Hagelberg and contributors
+Copyright © 2019-2021 Phil Hagelberg and contributors
 
 Released under the terms of the GNU Lesser General Public License
 version 3 or later; see the file LICENSE.
