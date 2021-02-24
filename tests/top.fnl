@@ -2,5 +2,4 @@
 
 (print "this string
 has many
-lines"
-       "in it")
+lines" "in it")

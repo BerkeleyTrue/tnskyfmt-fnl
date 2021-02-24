@@ -6,9 +6,9 @@
 
 (fn abc []
   (do (set fail (+ fail 1))
-    (print "FAIL")
-    ;; hey
-    (print "Expected:")
-    (print after)
-    (print "Got:")
-    (print actual)))
+      (print "FAIL")
+      ;; hey
+      (print "Expected:")
+      (print after)
+      (print "Got:")
+      (print actual)))

@@ -68,7 +68,7 @@
   (for [i 2 (length t)]
     (table.insert out " ")
     (set indent (+ indent 1))
-    (let [viewed (view (. t i) inspector indent)]
+    (let [viewed (view (. t i) inspector (- indent 1))]
       (if (and (line-exceeded? inspector indent viewed) (< 2 i))
           (do (when (= " " (. out (length out)))
                 (table.remove out)) ; trailing space

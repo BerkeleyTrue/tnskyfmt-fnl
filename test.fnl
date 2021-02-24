@@ -11,20 +11,21 @@
     (f:close)
     contents))
 
-(fn failed [after actual]
+(fn failed [name after actual]
   (set fail (+ fail 1))
-  (print "FAIL")
+  (print "FAIL" name)
   (print "Expected:")
   (print after)
   (print "Got:")
   (print actual))
 
-(each [_ name (ipairs cases)]
-  (let [expected (read (.. "tests/" name ".fnl"))
-        actual (.. (fmt.fnlfmt expected) "\n")]
+(each [_ name (ipairs (if (< 0 (length arg)) arg cases))]
+  (let [filename (.. "tests/" name ".fnl")
+        expected (read filename)
+        actual (fmt.format-file filename)]
     (if (= actual expected)
         (set pass (+ pass 1))
-        (failed expected actual))))
+        (failed name expected actual))))
 
 (print (: "%s passed, %s failed" :format pass fail))
 (os.exit fail)
