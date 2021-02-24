@@ -70,7 +70,9 @@
     (set indent (+ indent 1))
     (let [viewed (view (. t i) inspector indent)]
       (if (and (line-exceeded? inspector indent viewed) (< 2 i))
-          (do (table.insert out (.. "\n" (string.rep " " start-indent)))
+          (do (when (= " " (. out (length out)))
+                (table.remove out)) ; trailing space
+              (table.insert out (.. "\n" (string.rep " " start-indent)))
               (set indent start-indent)
               (let [viewed2 (view (. t i) inspector indent)]
                 (table.insert out viewed2)
