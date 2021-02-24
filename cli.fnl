@@ -7,11 +7,15 @@
             _ (assert (io.open filename :r) "File not found."))
         parser (-> (f:read :*all)
                    (fennel.stringStream)
-                   (fennel.parser))
+                   (fennel.parser filename {:comments true}))
         out []]
     (f:close)
     (each [ok? value parser]
-      (table.insert out (fnlfmt value)))
+      (let [formatted (fnlfmt value)
+            prev (. out (length out))]
+        (if (and (formatted:match "^ *;") prev (string.match prev "^ *;"))
+            (table.insert out formatted)
+            (table.insert out (.. formatted "\n")))))
     (table.concat out "\n")))
 
 (fn help []

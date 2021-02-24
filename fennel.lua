@@ -654,7 +654,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     elseif ((tv == "string") and key_3f and colon_string_3f(x)) then
       return (":" .. x)
     elseif (tv == "string") then
-      return string.format("%q", x)
+      return string.format("%q", x):gsub("\\\n", "\\n")
     elseif ((tv == "boolean") or (tv == "nil")) then
       return tostring(x)
     else
