@@ -97,4 +97,21 @@
     (when (not ok) (error val))
     val))
 
-{: fnlfmt}
+(fn format-file [filename]
+  (let [f (match filename
+            :- io.stdin
+            _ (assert (io.open filename :r) "File not found."))
+        parser (-> (f:read :*all)
+                   (fennel.stringStream)
+                   (fennel.parser filename {:comments true}))
+        out []]
+    (f:close)
+    (each [ok? value parser]
+      (let [formatted (fnlfmt value)
+            prev (. out (length out))]
+        (if (and (formatted:match "^ *;") prev (string.match prev "^ *;"))
+            (table.insert out formatted)
+            (table.insert out (.. formatted "\n")))))
+    (table.concat out "\n")))
+
+{: fnlfmt : format-file}
