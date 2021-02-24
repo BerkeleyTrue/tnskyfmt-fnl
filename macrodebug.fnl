@@ -11,8 +11,8 @@
   (let [warn (fn [msg ...] (io.stderr:write (.. "Warning: " msg "\n")) ...)
         fmt  (match (pcall require :fnlfmt)
                (fmt-ok {: fnlfmt}) fnlfmt
-               (->> (match (pcall require :fennelview)
-                      (ok view) view tostring)
+               (->> (match (pcall require :fennel)
+                      (ok {: view}) view tostring)
                     (warn "Failed to load fnlfmt; try checking package.path")))
         out (fmt (macroexpand expr _SCOPE))]
     (if return-string?

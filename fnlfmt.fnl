@@ -1,4 +1,4 @@
-(local view (require :fennelview))
+(local {: view} (require :fennel))
 
 ;; Roughly the strategy is to find whether the current line is part of a table,
 ;; a "body" special form call, a regular function call, or none of the above.

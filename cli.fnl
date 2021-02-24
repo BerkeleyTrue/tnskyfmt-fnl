@@ -1,5 +1,4 @@
 (local fennel (require :fennel))
-(local view (require :fennelview))
 (local {: fnlfmt} (require :fnlfmt))
 
 (fn format [filename]

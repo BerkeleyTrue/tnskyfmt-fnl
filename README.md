@@ -7,6 +7,8 @@ this point be considered authoritative on how to format Fennel code.
 
 ## Usage
 
+    $ make
+
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
 
     $ cat my-file.fnl | fnlfmt - # pipe fennel to stdin, get formatted stdout
