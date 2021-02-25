@@ -7,10 +7,8 @@ this point be considered authoritative on how to format Fennel code.
 
 ## Usage
 
-    $ make
-
+    $ make # compile fnlfmt script you can place on your $PATH
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
-
     $ cat my-file.fnl | fnlfmt - # pipe fennel to stdin, get formatted stdout
 
 ## Contributing
@@ -20,7 +18,7 @@ Send patches directly to the maintainer or the
 
 ## Known issues
 
-* Comments inside tables can throw off formatting.
+* The `{: symbol}` shorthand notation is not used.
 * Strings are only ever emitted as `:colon-notation` in table keys.
 
 ## License

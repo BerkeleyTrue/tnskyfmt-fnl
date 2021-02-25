@@ -25,16 +25,24 @@
 
 (fn view-let [bindings view inspector indent]
   (let [out ["["]]
+    (var offset 0)
     (for [i 1 (length bindings) 2]
-      ;; TODO: comments inside let throw this all off!
-      (let [name (view (. bindings i) inspector (+ indent 1))
+      ;; when a let binding has a comment in it, emit it but don't let it throw
+      ;; off the name/value pair counting
+      (while (fennel.comment? (. bindings (+ i offset)))
+        (table.insert out (view (. bindings (+ i offset))))
+        (table.insert out (.. "\n " (string.rep " " indent)))
+        (set offset (+ offset 1)))
+      (let [i (+ offset i)
+            name (view (. bindings i) inspector (+ indent 1))
             indent2 (+ indent 2 (last-line-length name))
             value (view (. bindings (+ i 1)) inspector indent2)]
-        (table.insert out name)
-        (table.insert out " ")
-        (table.insert out value)
-        (when (< i (- (length bindings) 1))
-          (table.insert out (.. "\n " (string.rep " " indent))))))
+        (when (<= i (length bindings))
+          (table.insert out name)
+          (table.insert out " ")
+          (table.insert out value)
+          (when (< i (- (length bindings) 1))
+            (table.insert out (.. "\n " (string.rep " " indent)))))))
     (table.insert out "]")
     (table.concat out)))
 

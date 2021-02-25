@@ -3,3 +3,12 @@
 
 (print "this string; the one in the second form--it also has a semicolon"
        "what will we do??")
+
+(do (let [this form
+          ;; has a comment
+          ;; so many
+          ;; such comments aaaah
+          in it!
+          ;; and another
+          a 9]
+      (oh-no!)))
