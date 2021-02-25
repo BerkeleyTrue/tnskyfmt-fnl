@@ -4,7 +4,7 @@
 (local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
                       "do" true "eval-compiler" true "for" true "each" true
                       "while" true "macro" true "match" true "doto" true
-                      "with-open" true "collect" true "icollect" true})
+                      "with-open" true "collect" true "icollect" true "if" true})
 
 (fn colon-string? [s]
   (and (= :string (type s)) (s:find "^[-%w?\\^_!$%&*+./@:|<=>]+$")))
@@ -64,7 +64,9 @@
 
 (fn view-body [t view inspector start-indent out callee]
   (let [start-index (view-init-body t view inspector start-indent out callee)
-        indent (if (= callee :do) (+ start-indent 2) start-indent)]
+        indent (if (or (= callee :do) (= callee :if))
+                   (+ start-indent 2)
+                   start-indent)]
     (for [i start-index (length t)]
       (let [viewed (view (. t i) inspector indent)
             body-indent (+ indent 1 (last-line-length (. out (length out))))]
