@@ -17,7 +17,15 @@
       (let [third (view (. t 3) inspector indent)]
         (table.insert out " ")
         (table.insert out third)
-        4)
+        (if (= :string (type (. t 4)))
+            (let [inspector (doto (collect [k v (pairs inspector)]
+                                    (values k v))
+                              (tset :newline-in-string? true))
+                  docstring (view (. t 3) inspector indent)]
+              (table.insert out " ")
+              (table.insert out docstring)
+              5)
+            4))
       3))
 
 (fn view-let [bindings view inspector indent]
@@ -125,7 +133,7 @@ number of handled arguments."
         ;; list's metamethod for fennelview is where the magic happens!
         _ (set list-mt.__fennelview list-view)
         (ok? val) (pcall fennel.view ast {:empty-as-sequence? true
-                                          :newline-in-string? :TODO})]
+                                          :newline-in-string? false})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
     (assert ok? val)
