@@ -20,8 +20,8 @@ Send patches directly to the maintainer or the
 
 ## Known issues
 
-Multi-line strings containing semicolons or delimiters may result in
-incorrect indentation in certain situations.
+* Comments inside tables can throw off formatting.
+* Strings are only ever emitted as `:colon-notation` in table keys.
 
 ## License
 

@@ -6,18 +6,13 @@
                       "while" true "macro" true "match" true "doto" true
                       "with-open" true "collect" true "icollect" true})
 
-(fn anonymous-fn? [[callee name-org-arglist]]
-  (and (= :fn (tostring callee))
-       (not (match (getmetatable name-org-arglist)
-              [which] (= which :SYMBOL)))))
+(fn colon-string? [s]
+  (and (= :string (type s)) (s:find "^[-%w?\\^_!$%&*+./@:|<=>]+$")))
 
-(fn start-for [form]
-  (if (anonymous-fn? form) 3
-      (. {:fn 4 :match 3 :do 2 :let 3 :when 3 :if 3
-          :while 3 :each 3 :for 3} (tostring (. form 1)))))
+(fn last-line-length [line] (length (line:match "[^\n]*$")))
 
 (fn line-exceeded? [inspector indent viewed]
-  (< inspector.line-length (+ indent (length (viewed:match "[^\n]*$")))))
+  (< inspector.line-length (+ indent (last-line-length viewed))))
 
 (fn view-fn-args [t view inspector indent out callee]
   (if (or (fennel.sym? (. t 2))
@@ -33,7 +28,7 @@
     (for [i 1 (length bindings) 2]
       ;; TODO: comments inside let throw this all off!
       (let [name (view (. bindings i) inspector (+ indent 1))
-            indent2 (+ indent 2 (length (name:match "[^\n]*$")))
+            indent2 (+ indent 2 (last-line-length name))
             value (view (. bindings (+ i 1)) inspector indent2)]
         (table.insert out name)
         (table.insert out " ")
@@ -46,32 +41,43 @@
 (fn view-init-body [t view inspector indent out callee]
   (table.insert out " ")
   (let [indent (+ indent (length callee))
-        second (if (= callee :let)
-                   (view-let (. t 2) view inspector indent)
-                   (view (. t 2) inspector indent))]
+        second (match callee
+                 :let (view-let (. t 2) view inspector indent)
+                 _ (view (. t 2) inspector indent))]
     (table.insert out second)
     (if (. {:fn true :lambda true :λ true} callee)
         (view-fn-args t view inspector (+ indent (length second)) out callee)
         3)))
 
+(fn match-same-line? [callee i out viewed]
+  (and (= :match callee) (= 0 (math.fmod i 2))
+       (< (+ (or (string.find viewed "\n") (length viewed)) 1
+             (last-line-length (. out (length out)))) 80)))
+
 (fn view-body [t view inspector start-indent out callee]
   (let [start-index (view-init-body t view inspector start-indent out callee)
         indent (if (= callee :do) (+ start-indent 2) start-indent)]
     (for [i start-index (length t)]
-      (let [viewed (view (. t i) inspector indent)]
-        ;; TODO: allow match clauses and body to share a line sometimes
-        (table.insert out (.. "\n" (string.rep " " indent)))
-        (table.insert out viewed)))))
+      (let [viewed (view (. t i) inspector indent)
+            body-indent (+ indent 1 (last-line-length (. out (length out))))]
+        (if (match-same-line? callee i out viewed)
+            (do (table.insert out " ")
+                (table.insert out (view (. t i) inspector body-indent)))
+            (do (table.insert out (.. "\n" (string.rep " " indent)))
+                (table.insert out viewed)))))))
 
 (fn view-call [t view inspector start-indent out]
   (var indent start-indent)
   (for [i 2 (length t)]
     (table.insert out " ")
     (set indent (+ indent 1))
-    (let [viewed (view (. t i) inspector (- indent 1))]
+    (let [viewed (if (and (= :require (tostring (. t 1)))
+                          (colon-string? (. t i)))
+                     (.. ":" (. t i))
+                     (view (. t i) inspector (- indent 1)))]
       (if (and (line-exceeded? inspector indent viewed) (< 2 i))
           (do (when (= " " (. out (length out)))
-                (table.remove out)) ; trailing space
+                (table.remove out))
               (table.insert out (.. "\n" (string.rep " " start-indent)))
               (set indent start-indent)
               (let [viewed2 (view (. t i) inspector indent)]
