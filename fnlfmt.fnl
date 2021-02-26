@@ -119,11 +119,38 @@ number of handled arguments."
     (table.insert out ")")
     (table.concat out)))
 
+(fn walk-tree [root f custom-iterator]
+  "Walks a tree (like the AST), invoking f(node, idx, parent) on each node.
+When f returns a truthy value, recursively walks the children."
+  (fn walk [iterfn parent idx node]
+    (when (f idx node parent)
+      (each [k v (iterfn node)]
+        (walk iterfn node k v))))
+  (walk (or custom-iterator pairs) nil nil root)
+  root)
+
+(fn shorthand-pair? [k v]
+  (and (= :string (type k)) (fennel.sym? v) (= k (tostring v))))
+
+(fn table-shorthand [idx form parent]
+  "Walker function to replace {:foo foo :bar bar} with {: foo : bar} shorthand."
+  (when (and (= :table (type form)) (not (fennel.sym? form))
+             (not (fennel.comment? form)) (not= fennel.varg form))
+    (when (and (not (fennel.list? form)) (not (fennel.sequence? form)))
+      (each [_ key (ipairs (icollect [k v (pairs form)]
+                             (when (shorthand-pair? k v)
+                               k)))]
+        (tset form (fennel.sym ":") (. form key))
+        (tset form key nil)))
+    true))
+
 (fn fnlfmt [ast]
   "Return a formatted representation of ast."
   (let [{: __fennelview &as list-mt} (getmetatable (fennel.list))
         ;; list's metamethod for fennelview is where the magic happens!
         _ (set list-mt.__fennelview list-view)
+        ;; this would be better if we operated on a copy!
+        _ (walk-tree ast table-shorthand)
         (ok? val) (pcall fennel.view ast {:empty-as-sequence? true
                                           :prefer-colon? true
                                           :escape-newlines? true})]
@@ -142,9 +169,9 @@ number of handled arguments."
                    (fennel.parser filename {:comments true}))
         out []]
     (f:close)
-    (each [ok? value parser]
-      (assert ok? value)
-      (let [formatted (fnlfmt value)
+    (each [ok? ast parser]
+      (assert ok? ast)
+      (let [formatted (fnlfmt ast)
             prev (. out (length out))]
         ;; Don't add extra newlines between top-level comments.
         (when (and prev (not (and (formatted:match "^ *;")

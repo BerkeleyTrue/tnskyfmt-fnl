@@ -18,7 +18,7 @@ Send patches directly to the maintainer or the
 
 ## Known issues
 
-* The `{: symbol}` shorthand notation is not used.
+* When using fnlfmt programmatically, it may modify the AST argument.
 * Comments in tables can lead to unusual line break patterns.
 
 ## License
