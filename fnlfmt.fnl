@@ -11,20 +11,18 @@
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
 
-(fn view-fn-args [t view inspector indent out callee]
+(fn view-fn-args [t view inspector indent start-indent out callee]
   "Named functions need their name and arglists to be on the first line."
   (if (fennel.sym? (. t 2))
       (let [third (view (. t 3) inspector indent)]
         (table.insert out " ")
         (table.insert out third)
         (if (= :string (type (. t 4)))
-            (let [inspector (doto (collect [k v (pairs inspector)]
-                                    (values k v))
-                              (tset :newline-in-string? true))
-                  docstring (view (. t 3) inspector indent)]
-              (table.insert out " ")
-              (table.insert out docstring)
-              5)
+            (do (table.insert out (.. "\n" (string.rep " " start-indent)))
+                (set inspector.escape-newlines? false)
+                (table.insert out (view (. t 4) inspector start-indent))
+                (set inspector.escape-newlines? true)
+                5)
             4))
       3))
 
@@ -53,17 +51,18 @@
     (table.insert out "]")
     (table.concat out)))
 
-(fn view-init-body [t view inspector indent out callee]
+(fn view-init-body [t view inspector start-indent out callee]
   "Certain forms need special handling of their first few args. Returns the
 number of handled arguments."
   (table.insert out " ")
-  (let [indent (+ indent (length callee))
+  (let [indent (+ start-indent (length callee))
         second (match callee
                  :let (view-let (. t 2) view inspector indent)
                  _ (view (. t 2) inspector indent))]
     (table.insert out second)
     (if (. {:fn true :lambda true :λ true} callee)
-        (view-fn-args t view inspector (+ indent (length second)) out callee)
+        (view-fn-args t view inspector (+ indent (length second)) start-indent
+                      out callee)
         3)))
 
 (fn match-same-line? [callee i out viewed]
@@ -133,7 +132,7 @@ number of handled arguments."
         ;; list's metamethod for fennelview is where the magic happens!
         _ (set list-mt.__fennelview list-view)
         (ok? val) (pcall fennel.view ast {:empty-as-sequence? true
-                                          :newline-in-string? false})]
+                                          :escape-newlines? true})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
     (assert ok? val)

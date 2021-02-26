@@ -649,12 +649,12 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
       return pp_table(x, options0, indent0)
     elseif (tv == "number") then
       return number__3estring(x)
-    elseif ((tv == "string") and key_3f and colon_string_3f(x)) then
+    elseif ((tv == "string") and colon_string_3f(x) and (key_3f or options0["prefer-colon?"])) then
       return (":" .. x)
     elseif (tv == "string") then
       local _4_0 = nil
       local function _5_()
-        if (options0["newline-in-string?"] == false) then
+        if options0["escape-newlines?"] then
           return "\\n"
         else
           return "\n"
@@ -3574,6 +3574,14 @@ do
                  (-?>> ,el ,(unpack els))
                  ,tmp)))))
   
+  (fn ?dot [tbl k1 ...]
+    "Nil-safe table look up.
+  Same as . (dot), except will short-circuit with nil when it encounters
+  a nil value in any of subsequent keys."
+    (if (= nil k1)
+        tbl
+        `(?. (. ,tbl ,k1) ,...)))
+  
   (fn doto* [val ...]
     "Evaluates val and splices it into the first argument of subsequent forms."
     (let [name (gensym)
@@ -3883,8 +3891,10 @@ do
           seconds []
           res []]
       (for [i 1 (length seq) 2]
-        (table.insert firsts (or (. seq i) 'nil))
-        (table.insert seconds (or (. seq (+ i 1)) 'nil)))
+        (let [first (. seq i)
+              second (. seq (+ i 1))]
+          (table.insert firsts (if (not= nil first) first 'nil))
+          (table.insert seconds (if (not= nil second) second 'nil))))
       (each [i v1 (ipairs firsts)]
         (let [v2 (. seconds i)]
           (if (not= nil v2)
@@ -3936,7 +3946,7 @@ do
           (table.insert match-body else-branch))
       (match* val (unpack match-body))))
   
-  {:-> ->* :->> ->>* :-?> -?>* :-?>> -?>>*
+  {:-> ->* :->> ->>* :-?> -?>* :-?>> -?>>* :?. ?dot
    :doto doto* :when when* :with-open with-open*
    :collect collect* :icollect icollect*
    :partial partial* :lambda lambda*
