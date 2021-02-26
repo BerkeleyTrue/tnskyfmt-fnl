@@ -8,6 +8,6 @@ fnlfmt: cli.fnl fnlfmt.fnl
 test: fnlfmt ; fennel test.fnl
 count: ; cloc fnlfmt.fnl
 roundtrip: fnlfmt ; @for file in $(SRC) ; do ./fnlfmt $$file | diff -u $$file - ; done
-clean: rm fnlfmt
+clean: ; rm fnlfmt
 
 .PHONY: test count roundtrip clean

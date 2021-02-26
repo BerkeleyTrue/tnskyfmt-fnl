@@ -1,6 +1,6 @@
 (local x (require :x))
 
-(match ["a" "b" "c"]
+(match [:a :b :c]
   [this pattern is really long! too long fer one line]
   (do (the body is long too)
       (too long to fit on one line))

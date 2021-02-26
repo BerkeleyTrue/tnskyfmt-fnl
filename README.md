@@ -19,7 +19,7 @@ Send patches directly to the maintainer or the
 ## Known issues
 
 * The `{: symbol}` shorthand notation is not used.
-* Strings are only ever emitted as `:colon-notation` in table keys.
+* Comments in tables can lead to unusual line break patterns.
 
 ## License
 

@@ -620,7 +620,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     return _2_0
   end
   local function colon_string_3f(s)
-    return s:find("^[-%w?\\^_!$%&*+./@:|<=>]+$")
+    return s:find("^[-%w?\\^_!$%&*+./@|<=>]+$")
   end
   local function make_options(t, options)
     local defaults = {["detect-cycles?"] = true, ["empty-as-sequence?"] = false, ["line-length"] = 80, ["metamethod?"] = true, ["one-line?"] = false, ["utf8?"] = true, depth = 128}

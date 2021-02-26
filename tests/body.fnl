@@ -8,7 +8,7 @@
       "this docstring
 has a newline in it"
       (do (set fail (+ fail 1))
-          (print "FAIL")
+          (print :FAIL)
           ;; hey
           (print "Expected:")
           (print after)

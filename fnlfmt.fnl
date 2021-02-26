@@ -5,9 +5,6 @@
                       "while" true "macro" true "match" true "doto" true
                       "with-open" true "collect" true "icollect" true "if" true})
 
-(fn colon-string? [s]
-  (and (= :string (type s)) (s:find "^[-%w?\\^_!$%&*+./@:|<=>]+$")))
-
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
 
@@ -106,11 +103,7 @@ number of handled arguments."
   (for [i 2 (length t)]
     (table.insert out " ")
     (set indent (+ indent 1))
-    ;; special-case strings passed to require; kinda cheesy I guess
-    (let [viewed (if (and (= :require (tostring (. t 1)))
-                          (colon-string? (. t i)))
-                     (.. ":" (. t i))
-                     (view (. t i) inspector (- indent 1)))]
+    (let [viewed (view (. t i) inspector (- indent 1))]
       (if (and (line-exceeded? inspector indent viewed) (< 2 i))
           (set indent (view-with-newline view inspector out t i start-indent))
           (do (table.insert out viewed)
@@ -132,6 +125,7 @@ number of handled arguments."
         ;; list's metamethod for fennelview is where the magic happens!
         _ (set list-mt.__fennelview list-view)
         (ok? val) (pcall fennel.view ast {:empty-as-sequence? true
+                                          :prefer-colon? true
                                           :escape-newlines? true})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
