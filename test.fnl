@@ -1,6 +1,6 @@
 (local fmt (require :fnlfmt))
 
-(local cases ["top" "table" "call" "body" "misc" "semicolon" "match"])
+(local cases [:top :table :call :body :misc :semicolon :match :binding])
 
 (var pass 0)
 (var fail 0)

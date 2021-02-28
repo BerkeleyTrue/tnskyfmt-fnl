@@ -23,44 +23,51 @@
             4))
       3))
 
-(fn view-let [bindings view inspector indent]
-  "The let bindings sequence needs name/value name/value formatting."
+(fn first-thing-in-line? [out]
+  (let [last (or (. out (length out)) "")]
+    (not (: (last:match "[^\n]*$") :match "[^ ]"))))
+
+(fn view-binding [bindings view inspector start-indent let?]
+  "Binding sequences need special care; regular sequence assumptions don't work.
+We want everything to be on one line as much as possible, (except for let)."
   (let [out ["["]]
-    (var offset 0)
-    (for [i 1 (length bindings) 2]
-      ;; when a let binding has a comment in it, emit it but don't let it throw
+    (var (offset count) (values 0 0))
+    (var indent (+ start-indent 1))
+    (for [i 1 (length bindings)]
+      ;; when a binding has a comment in it, emit it but don't let it throw
       ;; off the name/value pair counting
       (while (fennel.comment? (. bindings (+ i offset)))
+        (set indent start-indent)
+        (when (not (first-thing-in-line? out))
+          (table.insert out " "))
         (table.insert out (view (. bindings (+ i offset))))
         (table.insert out (.. "\n " (string.rep " " indent)))
         (set offset (+ offset 1)))
       (let [i (+ offset i)
-            name (view (. bindings i) inspector (+ indent 1))
-            indent-value (+ indent 2 (last-line-length name))
-            value (view (. bindings (+ i 1)) inspector indent-value)]
+            viewed (view (. bindings i) inspector indent)]
         (when (<= i (length bindings))
-          (table.insert out name)
-          (table.insert out " ")
-          (table.insert out value)
-          ;; unless it's the last pair, indent for the next one
-          (when (< i (- (length bindings) 1))
-            (table.insert out (.. "\n " (string.rep " " indent)))))))
+          (if (or (first-thing-in-line? out) (= i 1)) nil
+              (and let? (= 0 (math.fmod count 2)))
+              (do (set indent start-indent)
+                  (table.insert out (.. "\n " (string.rep " " indent))))
+              (table.insert out " "))
+          (table.insert out viewed)
+          (set count (+ count 1))
+          (set indent (+ indent 1 (last-line-length viewed))))))
     (table.insert out "]")
     (table.concat out)))
 
-(local one-line-init-forms
-       {:each true :for true :with-open true :collect true :icollect true})
+(local init-bindings {:let true :each true :for true :with-open true
+                      :collect true :icollect true})
 
 (fn view-init-body [t view inspector start-indent out callee]
   "Certain forms need special handling of their first few args. Returns the
 number of handled arguments."
   (table.insert out " ")
-  (set inspector.one-line? (. one-line-init-forms callee))
   (let [indent (+ start-indent (length callee))
-        second (match callee
-                 :let (view-let (. t 2) view inspector indent)
+        second (match (. init-bindings callee)
+                 true (view-binding (. t 2) view inspector indent (= callee :let))
                  _ (view (. t 2) inspector indent))]
-    (set inspector.one-line? false)
     (table.insert out second)
     (if (. {:fn true :lambda true :λ true} callee)
         (view-fn-args t view inspector (+ indent (length second)) start-indent
