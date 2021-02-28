@@ -48,14 +48,19 @@
     (table.insert out "]")
     (table.concat out)))
 
+(local one-line-init-forms
+       {:each true :for true :with-open true :collect true :icollect true})
+
 (fn view-init-body [t view inspector start-indent out callee]
   "Certain forms need special handling of their first few args. Returns the
 number of handled arguments."
   (table.insert out " ")
+  (set inspector.one-line? (. one-line-init-forms callee))
   (let [indent (+ start-indent (length callee))
         second (match callee
                  :let (view-let (. t 2) view inspector indent)
                  _ (view (. t 2) inspector indent))]
+    (set inspector.one-line? false)
     (table.insert out second)
     (if (. {:fn true :lambda true :λ true} callee)
         (view-fn-args t view inspector (+ indent (length second)) start-indent
@@ -64,8 +69,8 @@ number of handled arguments."
 
 (fn match-same-line? [callee i out viewed]
   (and (= :match callee) (= 0 (math.fmod i 2))
-       (< (+ (or (string.find viewed "\n") (length viewed)) 1
-             (last-line-length (. out (length out)))) 80)))
+       (<= (+ (or (string.find viewed "\n") (length viewed)) 1
+              (last-line-length (. out (length out)))) 80)))
 
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
