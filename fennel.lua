@@ -403,7 +403,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     end
     return (indent + opener_length)
   end
-  local pp = {}
+  local pp = nil
   local function concat_table_lines(elements, options, multiline_3f, indent, table_type, prefix)
     local indent_str = ("\n" .. string.rep(" ", indent))
     local open = nil
@@ -467,8 +467,8 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
           local v = _7_[2]
           local _8_
           do
-            local k0 = pp.pp(k, options, (indent0 + 1), true)
-            local v0 = pp.pp(v, options, (indent0 + slength(k0) + 1))
+            local k0 = pp(k, options, (indent0 + 1), true)
+            local v0 = pp(v, options, (indent0 + slength(k0) + 1))
             multiline_3f = (multiline_3f or k0:find("\n") or v0:find("\n"))
             _8_ = (k0 .. " " .. v0)
           end
@@ -505,7 +505,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
           local v = _4_[2]
           local _5_
           do
-            local v0 = pp.pp(v, options, indent0)
+            local v0 = pp(v, options, indent0)
             multiline_3f = (multiline_3f or v0:find("\n"))
             _5_ = v0
           end
@@ -555,7 +555,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
       end
       options["visible-cycle?"] = _2_
       _ = nil
-      local lines, force_multi_line_3f = metamethod(t, pp.pp, options, indent)
+      local lines, force_multi_line_3f = metamethod(t, pp, options, indent)
       options["visible-cycle?"] = nil
       local _3_0 = type(lines)
       if (_3_0 == "string") then
@@ -623,7 +623,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     return s:find("^[-%w?\\^_!$%&*+./@|<=>]+$")
   end
   local function make_options(t, options)
-    local defaults = {["detect-cycles?"] = true, ["empty-as-sequence?"] = false, ["line-length"] = 80, ["metamethod?"] = true, ["one-line?"] = false, ["utf8?"] = true, depth = 128}
+    local defaults = {["detect-cycles?"] = true, ["empty-as-sequence?"] = false, ["escape-newlines?"] = false, ["line-length"] = 80, ["metamethod?"] = true, ["one-line?"] = false, ["prefer-colon?"] = false, ["utf8?"] = true, depth = 128}
     local overrides = {appearances = count_table_appearances(t, {}), level = 0, seen = {len = 0}}
     for k, v in pairs((options or {})) do
       defaults[k] = v
@@ -633,43 +633,53 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     end
     return defaults
   end
-  pp.pp = function(x, options, indent, key_3f)
+  local function _2_(x, options, indent, colon_3f)
     local indent0 = (indent or 0)
     local options0 = (options or make_options(x))
     local tv = type(x)
-    local function _3_()
-      local _2_0 = getmetatable(x)
-      if _2_0 then
-        return _2_0.__fennelview
+    local function _4_()
+      local _3_0 = getmetatable(x)
+      if _3_0 then
+        return _3_0.__fennelview
       else
-        return _2_0
+        return _3_0
       end
     end
-    if ((tv == "table") or ((tv == "userdata") and _3_())) then
+    if ((tv == "table") or ((tv == "userdata") and _4_())) then
       return pp_table(x, options0, indent0)
     elseif (tv == "number") then
       return number__3estring(x)
-    elseif ((tv == "string") and colon_string_3f(x) and (key_3f or options0["prefer-colon?"])) then
-      return (":" .. x)
-    elseif (tv == "string") then
-      local _4_0 = nil
+    else
       local function _5_()
-        if options0["escape-newlines?"] then
-          return "\\n"
+        if (colon_3f ~= nil) then
+          return colon_3f
         else
-          return "\n"
+          return options0["prefer-colon?"]
         end
       end
-      _4_0 = string.format("%q", x):gsub("\\\n", _5_())
-      return _4_0
-    elseif ((tv == "boolean") or (tv == "nil")) then
-      return tostring(x)
-    else
-      return ("#<" .. tostring(x) .. ">")
+      if ((tv == "string") and colon_string_3f(x) and _5_()) then
+        return (":" .. x)
+      elseif (tv == "string") then
+        local _6_0 = nil
+        local function _7_()
+          if options0["escape-newlines?"] then
+            return "\\n"
+          else
+            return "\n"
+          end
+        end
+        _6_0 = string.format("%q", x):gsub("\\\n", _7_())
+        return _6_0
+      elseif ((tv == "boolean") or (tv == "nil")) then
+        return tostring(x)
+      else
+        return ("#<" .. tostring(x) .. ">")
+      end
     end
   end
+  pp = _2_
   local function view(x, options)
-    return pp.pp(x, make_options(x, options), 0)
+    return pp(x, make_options(x, options), 0)
   end
   return view
 end
@@ -3314,10 +3324,13 @@ package.preload["fennel.utils"] = package.preload["fennel.utils"] or function(..
   local function comment_view(c)
     return c, true
   end
-  local function sym_eq(a, b)
+  local function sym_3d(a, b)
     return ((deref(a) == deref(b)) and (getmetatable(a) == getmetatable(b)))
   end
-  local symbol_mt = {"SYMBOL", __eq = sym_eq, __fennelview = deref, __tostring = deref}
+  local function sym_3c(a, b)
+    return (a[1] < tostring(b))
+  end
+  local symbol_mt = {"SYMBOL", __eq = sym_3d, __fennelview = deref, __lt = sym_3c, __tostring = deref}
   local expr_mt = {"EXPR", __tostring = deref}
   local list_mt = {"LIST", __fennelview = list__3estring, __tostring = list__3estring}
   local comment_mt = {"COMMENT", __fennelview = comment_view, __tostring = deref}
@@ -3574,13 +3587,13 @@ do
                  (-?>> ,el ,(unpack els))
                  ,tmp)))))
   
-  (fn ?dot [tbl k1 ...]
+  (fn ?dot [tbl k ...]
     "Nil-safe table look up.
   Same as . (dot), except will short-circuit with nil when it encounters
   a nil value in any of subsequent keys."
-    (if (= nil k1)
-        tbl
-        `(?. (. ,tbl ,k1) ,...)))
+    (if (= nil k) tbl
+        `(let [res# (. ,tbl ,k)]
+           (and res# (?. res# ,...)))))
   
   (fn doto* [val ...]
     "Evaluates val and splices it into the first argument of subsequent forms."
