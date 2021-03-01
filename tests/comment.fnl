@@ -11,3 +11,13 @@
   (set list-mt.__fennelview __fennelview)
   (assert ok? val)
   val)
+
+(fn view-body [t view inspector start-indent out callee]
+  "Insert arguments to a call to a special that takes body arguments."
+  (let [start-index (view-init-body t view inspector start-indent out callee)
+        ;; do and if don't actually have special indentation but they do need
+        ;; a newline after every form, so we can't use normal call formatting
+        indent (if (. one-element-per-line-forms callee)
+                   (+ start-indent 2)
+                   start-indent)]
+    12))

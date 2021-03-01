@@ -44,22 +44,22 @@
   (let [last (or (. out (length out)) "")]
     (not (: (last:match "[^\n]*$") :match "[^ ]"))))
 
-(fn view-binding [bindings view inspector start-indent let?]
+(fn view-binding [bindings view inspector start-indent callee]
   "Binding sequences need special care; regular sequence assumptions don't work.
 We want everything to be on one line as much as possible, (except for let)."
   (let [out ["["]]
     (var (offset count) (values 0 0))
-    (var indent (+ start-indent 1))
+    (var indent start-indent)
     (for [i 1 (length bindings)]
       ;; when a binding has a comment in it, emit it but don't let it throw
       ;; off the name/value pair counting
       (while (fennel.comment? (. bindings (+ i offset)))
         (when (< 80 (+ indent 1 (length (tostring (. bindings (+ i offset))))))
-          (table.insert out (.. "\n " (string.rep " " start-indent))))
+          (table.insert out (.. "\n" (string.rep " " start-indent))))
         (when (not (first-thing-in-line? out))
           (table.insert out " "))
         (table.insert out (view (. bindings (+ i offset))))
-        (table.insert out (.. "\n " (string.rep " " start-indent)))
+        (table.insert out (.. "\n" (string.rep " " start-indent)))
         (set indent start-indent)
         (set offset (+ offset 1)))
       (let [i (+ offset i)
@@ -67,9 +67,9 @@ We want everything to be on one line as much as possible, (except for let)."
         (when (<= i (length bindings))
           (if (or (first-thing-in-line? out) (= i 1))
               nil
-              (and let? (= 0 (math.fmod count 2)))
-              (do (table.insert out (.. "\n " (string.rep " " start-indent)))
-                  (set indent (+ start-indent 1)))
+              (and (= :let callee) (= 0 (math.fmod count 2)))
+              (do (table.insert out (.. "\n" (string.rep " " start-indent)))
+                  (set indent start-indent))
               (table.insert out " "))
           (table.insert out viewed)
           (set count (+ count 1))
@@ -90,7 +90,7 @@ number of handled arguments."
   (table.insert out " ")
   (let [indent (+ start-indent (length callee))
         second (match (. init-bindings callee)
-                 true (view-binding (. t 2) view inspector indent (= callee :let))
+                 true (view-binding (. t 2) view inspector (+ indent 1) callee)
                  _ (view (. t 2) inspector indent))
         indent (+ indent (length (second:match "[^\n]*$")))]
     (table.insert out second)
