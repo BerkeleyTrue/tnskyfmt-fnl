@@ -1,9 +1,22 @@
 (local fennel (require :fennel))
 
-(local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
-                      "do" true "eval-compiler" true "for" true "each" true
-                      "while" true "macro" true "match" true "doto" true
-                      "with-open" true "collect" true "icollect" true "if" true})
+(local body-specials {:collect true
+                      :do true
+                      :doto true
+                      :each true
+                      :eval-compiler true
+                      :fn true
+                      :for true
+                      :icollect true
+                      :if true
+                      :lambda true
+                      :let true
+                      :macro true
+                      :match true
+                      :when true
+                      :while true
+                      :with-open true
+                      "λ" true})
 
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
@@ -46,7 +59,8 @@ We want everything to be on one line as much as possible, (except for let)."
       (let [i (+ offset i)
             viewed (view (. bindings i) inspector indent)]
         (when (<= i (length bindings))
-          (if (or (first-thing-in-line? out) (= i 1)) nil
+          (if (or (first-thing-in-line? out) (= i 1))
+              nil
               (and let? (= 0 (math.fmod count 2)))
               (do (set indent start-indent)
                   (table.insert out (.. "\n " (string.rep " " indent))))
@@ -57,8 +71,12 @@ We want everything to be on one line as much as possible, (except for let)."
     (table.insert out "]")
     (table.concat out)))
 
-(local init-bindings {:let true :each true :for true :with-open true
-                      :collect true :icollect true})
+(local init-bindings {:collect true
+                      :each true
+                      :for true
+                      :icollect true
+                      :let true
+                      :with-open true})
 
 (fn view-init-body [t view inspector start-indent out callee]
   "Certain forms need special handling of their first few args. Returns the
@@ -70,15 +88,14 @@ number of handled arguments."
                  _ (view (. t 2) inspector indent))
         indent (+ indent (length (second:match "[^\n]*$")))]
     (table.insert out second)
-    (if (. {:fn true :lambda true :λ true} callee)
-        (view-fn-args t view inspector indent start-indent
-                      out callee)
+    (if (. {:fn true :lambda true "λ" true} callee)
+        (view-fn-args t view inspector indent start-indent out callee)
         3)))
 
 (fn match-same-line? [callee i out viewed]
   (and (= :match callee) (= 0 (math.fmod i 2))
-       (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$"))) 1
-              (last-line-length (. out (length out)))) 80)))
+       (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
+              1 (last-line-length (. out (length out)))) 80)))
 
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
@@ -164,9 +181,10 @@ When f returns a truthy value, recursively walks the children."
         _ (set list-mt.__fennelview list-view)
         ;; this would be better if we operated on a copy!
         _ (walk-tree ast table-shorthand)
-        (ok? val) (pcall fennel.view ast {:empty-as-sequence? true
-                                          :prefer-colon? true
-                                          :escape-newlines? true})]
+        (ok? val) (pcall fennel.view ast
+                        {:empty-as-sequence? true
+                         :escape-newlines? true
+                         :prefer-colon? true})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
     (assert ok? val)
@@ -187,8 +205,9 @@ When f returns a truthy value, recursively walks the children."
       (let [formatted (fnlfmt ast)
             prev (. out (length out))]
         ;; Don't add extra newlines between top-level comments.
-        (when (and prev (not (and (formatted:match "^ *;")
-                                  (string.match prev "^ *;"))))
+        (when (and prev
+                   (not (and (formatted:match "^ *;")
+                             (string.match prev "^ *;"))))
           (table.insert out ""))
         (table.insert out formatted)))
     (table.insert out "")
