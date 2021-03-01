@@ -16,6 +16,10 @@
                       :when true
                       :while true
                       :with-open true
+                      "->" true
+                      "->>" true
+                      "-?>" true
+                      "-?>>" true
                       "λ" true})
 
 (fn last-line-length [line]
@@ -97,12 +101,15 @@ number of handled arguments."
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
 
+(local one-element-per-line-forms
+       {:if true :do true :-> true :->> true :-?> true :-?>> true})
+
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
   (let [start-index (view-init-body t view inspector start-indent out callee)
         ;; do and if don't actually have special indentation but they do need
         ;; a newline after every form, so we can't use normal call formatting
-        indent (if (or (= callee :do) (= callee :if))
+        indent (if (. one-element-per-line-forms callee)
                    (+ start-indent 2)
                    start-indent)]
     (for [i start-index (length t)]
