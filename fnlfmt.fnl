@@ -54,11 +54,13 @@ We want everything to be on one line as much as possible, (except for let)."
       ;; when a binding has a comment in it, emit it but don't let it throw
       ;; off the name/value pair counting
       (while (fennel.comment? (. bindings (+ i offset)))
-        (set indent start-indent)
+        (when (< 80 (+ indent 1 (length (tostring (. bindings (+ i offset))))))
+          (table.insert out (.. "\n " (string.rep " " start-indent))))
         (when (not (first-thing-in-line? out))
           (table.insert out " "))
         (table.insert out (view (. bindings (+ i offset))))
-        (table.insert out (.. "\n " (string.rep " " indent)))
+        (table.insert out (.. "\n " (string.rep " " start-indent)))
+        (set indent start-indent)
         (set offset (+ offset 1)))
       (let [i (+ offset i)
             viewed (view (. bindings i) inspector indent)]
@@ -66,8 +68,8 @@ We want everything to be on one line as much as possible, (except for let)."
           (if (or (first-thing-in-line? out) (= i 1))
               nil
               (and let? (= 0 (math.fmod count 2)))
-              (do (set indent start-indent)
-                  (table.insert out (.. "\n " (string.rep " " indent))))
+              (do (table.insert out (.. "\n " (string.rep " " start-indent)))
+                  (set indent (+ start-indent 1)))
               (table.insert out " "))
           (table.insert out viewed)
           (set count (+ count 1))
