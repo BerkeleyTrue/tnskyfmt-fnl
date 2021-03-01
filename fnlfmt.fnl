@@ -1,6 +1,10 @@
 (local fennel (require :fennel))
 
-(local body-specials {:collect true
+(local body-specials {:-> true
+                      :->> true
+                      :-?> true
+                      :-?>> true
+                      :collect true
                       :do true
                       :doto true
                       :each true
@@ -16,10 +20,6 @@
                       :when true
                       :while true
                       :with-open true
-                      "->" true
-                      "->>" true
-                      "-?>" true
-                      "-?>>" true
                       "λ" true})
 
 (fn last-line-length [line]
@@ -103,8 +103,12 @@ number of handled arguments."
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
 
-(local one-element-per-line-forms
-       {:if true :do true :-> true :->> true :-?> true :-?>> true})
+(local one-element-per-line-forms {:-> true
+                                   :->> true
+                                   :-?> true
+                                   :-?>> true
+                                   :do true
+                                   :if true})
 
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
@@ -185,15 +189,15 @@ When f returns a truthy value, recursively walks the children."
 
 (fn fnlfmt [ast]
   "Return a formatted representation of ast."
-  (let [{: __fennelview &as list-mt} (getmetatable (fennel.list))
+  (let [{&as list-mt : __fennelview} (getmetatable (fennel.list))
         ;; list's metamethod for fennelview is where the magic happens!
         _ (set list-mt.__fennelview list-view)
         ;; this would be better if we operated on a copy!
         _ (walk-tree ast table-shorthand)
         (ok? val) (pcall fennel.view ast
-                        {:empty-as-sequence? true
-                         :escape-newlines? true
-                         :prefer-colon? true})]
+                         {:empty-as-sequence? true
+                          :escape-newlines? true
+                          :prefer-colon? true})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
     (assert ok? val)

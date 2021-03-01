@@ -2,18 +2,21 @@
 ;; Also contains macros for patching macrodebug in the root compiler scoop
 ;; and restoring the original.
 
-(local *macros* {})
+(local *macros* [])
 
 ;; macros
 
 (fn *macros*.pretty-macrodebug [expr return-string?]
   "Patched version of Fennel's macrodebug that calls fnlfmt on the expanded form."
-  (let [warn (fn [msg ...] (io.stderr:write (.. "Warning: " msg "\n")) ...)
-        fmt  (match (pcall require :fnlfmt)
-               (fmt-ok {: fnlfmt}) fnlfmt
-               (->> (match (pcall require :fennel)
-                      (ok {: view}) view tostring)
-                    (warn "Failed to load fnlfmt; try checking package.path")))
+  (let [warn (fn [msg ...]
+               (io.stderr:write (.. "Warning: " msg "\n"))
+               ...)
+        fmt (match (pcall require :fnlfmt)
+              (fmt-ok {: fnlfmt}) fnlfmt
+              (->> (match (pcall require :fennel)
+                     (ok {: view}) view
+                     tostring)
+                   (warn "Failed to load fnlfmt; try checking package.path")))
         out (fmt (macroexpand expr _SCOPE))]
     (if return-string?
         out
@@ -22,7 +25,8 @@
 (fn *macros*.restore-default []
   "Resets macrodebug to the built-in version."
   (var root-scope _SCOPE)
-  (while root-scope.parent (set root-scope root-scope.parent))
+  (while root-scope.parent
+    (set root-scope root-scope.parent))
   (match root-scope.macros
     (core-macros ? (. core-macros :-macrodebug))
     (set (core-macros.macrodebug core-macros.-macrodebug)
@@ -32,13 +36,15 @@
   "Globally patches Fennel's macrodebug with fnlfmt's drop-in replacement.
 The original macrodebug is accessible as -macrodebug, and can be restored
 with restore-default-macrodebug"
-  (var root-scope _SCOPE) ; find root scope
-  (while root-scope.parent (set root-scope root-scope.parent))
+  (var root-scope _SCOPE)
+  ;; find root scope
+  (while root-scope.parent
+    (set root-scope root-scope.parent))
   ;; patch macrodebug, alias original to -macrodebug
-  (let [core-macros           root-scope.macros
+  (let [core-macros root-scope.macros
         {: pretty-macrodebug} _SCOPE.macros
-        default-macrodebug    core-macros.macrodebug]
-    (set core-macros.macrodebug  pretty-macrodebug)
+        default-macrodebug core-macros.macrodebug]
+    (set core-macros.macrodebug pretty-macrodebug)
     (set core-macros.-macrodebug default-macrodebug)))
 
 *macros*
