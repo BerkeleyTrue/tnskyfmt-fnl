@@ -203,14 +203,14 @@ When f returns a truthy value, recursively walks the children."
     (assert ok? val)
     val))
 
-(fn format-file [filename]
+(fn format-file [filename {: no-comments}]
   "Read source from a file and return formatted source."
   (let [f (match filename
             :- io.stdin
             _ (assert (io.open filename :r) "File not found."))
         parser (-> (f:read :*all)
                    (fennel.stringStream)
-                   (fennel.parser filename {:comments true}))
+                   (fennel.parser filename {:comments (not no-comments)}))
         out []]
     (f:close)
     (each [ok? ast parser]

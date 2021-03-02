@@ -33,7 +33,7 @@
                           cases))]
   (let [filename (.. :tests/ name :.fnl)
         expected (read filename)
-        actual (fmt.format-file filename)]
+        actual (fmt.format-file filename {})]
     (if (= actual expected)
         (set pass (+ pass 1))
         (failed name expected actual))))

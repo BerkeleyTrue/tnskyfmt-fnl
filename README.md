@@ -4,6 +4,8 @@ Format your Fennel!
 
 Note that this is somewhat of a work in progress and should not at
 this point be considered authoritative on how to format Fennel code.
+However, almost all of the current bugs involve comments, so using
+the `--no-comments` flag produces reasonable (non-commented) results.
 
 ## Usage
 

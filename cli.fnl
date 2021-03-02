@@ -3,14 +3,25 @@
 (local {: format-file} (require :fnlfmt))
 
 (fn help []
-  (print "Usage: fnlfmt [--fix] FILENAME")
+  (print "Usage: fnlfmt [--no-comments] [--fix] FILENAME")
   (print "With the --fix argument, updates the file in-place; otherwise")
   (print "prints the formatted file to stdout."))
 
+(local options [])
+
+(for [i (length arg) 1 -1]
+  (when (= :--fix (. arg i))
+    (set options.fix true)
+    (table.remove arg i))
+  (when (= :--no-comments (. arg i))
+    (set options.no-comments true)
+    (table.remove arg i)))
+
 (match arg
-  [:--fix filename] (let [new (format-file filename)
-                          f (assert (io.open filename :w))]
-                      (f:write new)
-                      (f:close))
-  [filename] (print (format-file filename))
+  [:--fix filename nil] (let [new (format-file filename options)
+                              f (assert (io.open filename :w))]
+                          (f:write new)
+                          (f:close))
+  [filename nil] (print (format-file filename options))
   _ (help))
+

@@ -55,7 +55,7 @@ should continue looking to previous lines."
 (local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
                       "eval-compiler" true "for" true "each" true
                       "while" true "macro" true "match" true "doto" true
-                      "with-open" true true "collect" true "icollect" true})
+                      "with-open" true "collect" true "icollect" true})
 
 (fn remove-comment [line in-string? pos]
   (if (< (# line) pos) line
