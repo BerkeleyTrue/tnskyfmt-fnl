@@ -5,6 +5,12 @@ fnlfmt: cli.fnl fnlfmt.fnl
 	fennel --require-as-include --compile $< >> $@
 	chmod +x $@
 
+selfhost:
+	fnlfmt --fix fnlfmt.fnl
+	fnlfmt --fix cli.fnl
+	fnlfmt --fix indentation.fnl
+	fnlfmt --fix macrodebug.fnl
+
 fennel.lua: ../fennel/fennel.lua ; cp $< $@
 
 test: fnlfmt ; fennel test.fnl

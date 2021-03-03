@@ -1,5 +1,4 @@
 (local fmt (require :fnlfmt))
-
 (local cases [:top
               :table
               :call

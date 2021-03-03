@@ -1,4 +1,5 @@
 (local fennel (require :fennel))
+
 (set debug.traceback fennel.traceback)
 
 (local {: format-file} (require :fnlfmt))
@@ -11,9 +12,6 @@
 (local options [])
 
 (for [i (length arg) 1 -1]
-  (when (= :--fix (. arg i))
-    (set options.fix true)
-    (table.remove arg i))
   (when (= :--no-comments (. arg i))
     (set options.no-comments true)
     (table.remove arg i)))
@@ -25,4 +23,3 @@
                           (f:close))
   [filename nil] (print (format-file filename options))
   _ (help))
-

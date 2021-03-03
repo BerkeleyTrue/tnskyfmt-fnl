@@ -2,7 +2,6 @@
 ;; without fully parsing it. This can be useful in text editors when you can't
 ;; always guarantee that the contents are well-formed; they could be in the
 ;; middle of being edited.
-
 ;; Roughly the strategy is to find whether the current line is part of a table,
 ;; a "body" special form call, a regular function call, or none of the above.
 ;; Each of these are indented differently.
@@ -29,40 +28,62 @@ should continue looking to previous lines."
         char (line:sub pos pos)
         looking-for (. stack (# stack))
         continue #(identify-line line (- pos 1) stack)]
-    (if (= 0 pos) nil
+    (if (= 0 pos)
+        nil
         ;; TODO: backslashed delimiters aren't consistently handled
-        (= (line:sub (- pos 1) (- pos 1)) :\ ) (continue)
+        (= (line:sub (- pos 1) (- pos 1)) "\\")
+        (continue)
         ;; if we find the delimiter we're looking for, stop looking
-        (= looking-for char) (do (table.remove stack) (continue))
+        (= looking-for char)
+        (do (table.remove stack)
+            (continue))
         ;; if we find a new form, start looking for the delimiter that begins it
-        (and (. closers char)
-             ;; (unless we're already in a string)
-             (not= looking-for "\"")) (do (table.insert stack (. closers char))
-                                        (continue))
+        (and (. closers char) ;; (unless we're already in a string)
+             (not= looking-for "\""))
+        (do (table.insert stack (. closers char))
+            (continue))
         ;; if we're looking for a delimiter, skip everything till we find it
-        looking-for (continue)
+        looking-for
+        (continue)
         ;; if we hit an opening table char, we're in a table!
-        (or (= "[" char) (= "{" char)) (values :table pos)
+        (or (= "[" char) (= "{" char))
+        (values :table pos)
         ;; if we hit an open paren, we're in a call!
-        (= "(" char) (values :call pos line)
-        :else (continue))))
+        (= "(" char)
+        (values :call pos line)
+        :else
+        (continue))))
 
 (fn symbol-at [line pos]
   (: (line:sub pos) :match "[^%s]+"))
 
 ;; Some special forms have their own indentation rules, but specials which
 ;; aren't on this list are indented like normal function calls.
-(local body-specials {"let" true "fn" true "lambda" true "λ" true "when" true
-                      "eval-compiler" true "for" true "each" true
-                      "while" true "macro" true "match" true "doto" true
-                      "with-open" true "collect" true "icollect" true})
+
+(local body-specials {:let true
+                      :fn true
+                      :lambda true
+                      "λ" true
+                      :when true
+                      :eval-compiler true
+                      :for true
+                      :each true
+                      :while true
+                      :macro true
+                      :match true
+                      :doto true
+                      :with-open true
+                      :collect true
+                      :icollect true})
 
 (fn remove-comment [line in-string? pos]
-  (if (< (# line) pos) line
+  (if (< (# line) pos)
+      line
       (= (line:sub pos pos) "\"")
       (remove-comment line (not in-string?) (+ pos 1))
       (and (= (line:sub pos pos) ";") (not in-string?))
-      (line:sub 1 (- pos 1)) ; could hit false positives in multi-line strings
+      (line:sub 1 (- pos 1))
+      ; could hit false positives in multi-line strings
       (remove-comment line in-string? (+ pos 1))))
 
 (fn identify-indent-type [lines last stack]
@@ -82,8 +103,8 @@ form begins. Also returns details about the position in the line."
   "Return indentation for a line, given a table of lines and a number offset.
 The prev-line-num indicates the line previous to the current line, which will be
 looked up in the table of lines. Returns the column number to indent to."
+  ;; three kinds of indentation:
   (match (identify-indent-type lines prev-line-num [])
-    ;; three kinds of indentation:
     (:table opening) opening
     (:body-special prev-indent) (+ prev-indent 2)
     (:call prev-indent function-name) (+ prev-indent (# function-name) 2)

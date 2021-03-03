@@ -1,5 +1,4 @@
 (local fennel (require :fennel))
-
 (local body-specials {:-> true
                       :->> true
                       :-?> true
@@ -27,7 +26,8 @@
 
 (fn any? [tbl pred]
   (not= 0 (length (icollect [_ v (pairs tbl)]
-                    (if (pred v) true)))))
+                    (if (pred v)
+                        true)))))
 
 (fn view-fn-args [t view inspector indent start-indent out callee]
   "Named functions need their name and arglists to be on the first line."
@@ -103,8 +103,8 @@ number of handled arguments."
         3)))
 
 (fn match-same-line? [callee i out viewed t]
-  (and (= :match callee) (= 0 (math.fmod i 2))
-       (not (any? t fennel.comment?)) ; just don't even try if there's comments!
+  ;; just don't even try if there's comments!
+  (and (= :match callee) (= 0 (math.fmod i 2)) (not (any? t fennel.comment?))
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
 
@@ -172,7 +172,8 @@ number of handled arguments."
         (table.insert out ")")
         (table.concat out))))
 
-(local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
+(local slength (or (-?> (rawget _G :utf8)
+                        (. :len)) #(length $)))
 
 (fn maybe-attach-comment [x indent c]
   (if c
@@ -184,7 +185,6 @@ number of handled arguments."
 
 (fn view-pair [t view inspector indent mt key]
   (let [val (. t key)
-        ;; should we use colon key shorthand?
         k (if (shorthand-pair? key val)
               ":"
               (view key inspector (+ indent 1) true))
@@ -258,7 +258,7 @@ When f returns a truthy value, recursively walks the children."
 (fn format-file [filename {: no-comments}]
   "Read source from a file and return formatted source."
   (let [f (match filename
-            :- io.stdin
+            "-" io.stdin
             _ (assert (io.open filename :r) "File not found."))
         parser (-> (f:read :*all)
                    (fennel.stringStream)
