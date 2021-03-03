@@ -5,6 +5,8 @@ fnlfmt: cli.fnl fnlfmt.fnl
 	fennel --require-as-include --compile $< >> $@
 	chmod +x $@
 
+fennel.lua: ../fennel/fennel.lua ; cp $< $@
+
 test: fnlfmt ; fennel test.fnl
 count: ; cloc fnlfmt.fnl
 roundtrip: fnlfmt ; @for file in $(SRC) ; do ./fnlfmt $$file | diff -u $$file - ; done

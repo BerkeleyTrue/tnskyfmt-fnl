@@ -152,7 +152,7 @@ number of handled arguments."
           (do (table.insert out viewed)
               (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
-(fn list-view [t view inspector indent]
+(fn view-list [t view inspector indent]
   (let [callee (view (. t 1) inspector (+ indent 1))
         out ["(" callee]]
     ;; indent differently if it's calling a special form with body args
@@ -161,6 +161,47 @@ number of handled arguments."
         (view-call t view inspector (+ indent (length callee) 2) out))
     (table.insert out ")")
     (table.concat out)))
+
+(local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
+
+(fn maybe-attach-comment [x indent c]
+  (if c
+      (.. (tostring c) "\n" (string.rep " " indent) x)
+      x))
+
+(fn shorthand-pair? [k v]
+  (and (= :string (type k)) (fennel.sym? v) (= k (tostring v))))
+
+(fn view-pair [t view inspector indent mt key]
+  (let [val (. t key)
+        ;; should we use colon key shorthand?
+        k (if (shorthand-pair? key val)
+              ":"
+              (view key inspector (+ indent 1) true))
+        v (view val inspector (+ indent (slength key) 1))]
+    (.. (maybe-attach-comment k indent (. mt.comments.keys key)) " "
+        (maybe-attach-comment v indent (. mt.comments.values val)))))
+
+(fn view-multiline-kv [pair-strs indent last-comment]
+  (if last-comment
+      (.. "{" (table.concat (doto pair-strs
+                              (table.insert (tostring last-comment))
+                              (table.insert "}"))
+                            (.. "\n" (string.rep " " indent))))
+      (.. "{" (table.concat pair-strs (.. "\n" (string.rep " " indent))) "}")))
+
+(fn view-kv [t view inspector indent]
+  "Normal fennelview table printing is insufficient for two reasons: it doesn't
+know what to do with : foo shorthand notation, and it doesn't emit comments."
+  (let [indent (+ indent 1)
+        mt (getmetatable t)
+        pair-strs (icollect [_ k (ipairs mt.keys)]
+                    (view-pair t view inspector indent mt k))
+        oneline (.. "{" (table.concat pair-strs " ") "}")]
+    (if (or (oneline:match "\n") mt.comments.last
+            (> (+ indent (length oneline)) inspector.line-length))
+        (view-multiline-kv pair-strs indent mt.comments.last)
+        oneline)))
 
 (fn walk-tree [root f custom-iterator]
   "Walks a tree (like the AST), invoking f(node, idx, parent) on each node.
@@ -172,28 +213,20 @@ When f returns a truthy value, recursively walks the children."
   (walk (or custom-iterator pairs) nil nil root)
   root)
 
-(fn shorthand-pair? [k v]
-  (and (= :string (type k)) (fennel.sym? v) (= k (tostring v))))
-
-(fn table-shorthand [idx form parent]
-  "Walker function to replace {:foo foo :bar bar} with {: foo : bar} shorthand."
+(fn set-fennelview-metamethod [idx form parent]
   (when (and (= :table (type form)) (not (fennel.sym? form))
              (not (fennel.comment? form)) (not= fennel.varg form))
     (when (and (not (fennel.list? form)) (not (fennel.sequence? form)))
-      (each [_ key (ipairs (icollect [k v (pairs form)]
-                             (when (shorthand-pair? k v)
-                               k)))]
-        (tset form (fennel.sym ":") (. form key))
-        (tset form key nil)))
+      (tset (getmetatable form) :__fennelview view-kv))
     true))
 
 (fn fnlfmt [ast]
   "Return a formatted representation of ast."
   (let [{&as list-mt : __fennelview} (getmetatable (fennel.list))
         ;; list's metamethod for fennelview is where the magic happens!
-        _ (set list-mt.__fennelview list-view)
+        _ (set list-mt.__fennelview view-list)
         ;; this would be better if we operated on a copy!
-        _ (walk-tree ast table-shorthand)
+        _ (walk-tree ast set-fennelview-metamethod)
         (ok? val) (pcall fennel.view ast
                          {:empty-as-sequence? true
                           :escape-newlines? true

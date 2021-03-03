@@ -1506,8 +1506,17 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
     assert((mt ~= getmetatable("")), "Illegal metatable access!")
     return mt
   end
-  local safe_compiler_env = setmetatable({assert = assert, bit = rawget(_G, "bit"), error = error, getmetatable = safe_getmetatable, ipairs = ipairs, math = utils.copy(math), next = next, pairs = pairs, pcall = pcall, print = print, rawequal = rawequal, rawget = rawget, rawlen = rawget(_G, "rawlen"), rawset = rawset, select = select, setmetatable = setmetatable, string = utils.copy(string), table = utils.copy(table), tonumber = tonumber, tostring = tostring, type = type, xpcall = xpcall}, {__index = compiler_env_warn})
-  local function make_compiler_env(ast, scope, parent)
+  local safe_require = nil
+  local function safe_compiler_env(strict_3f)
+    local _1_
+    if strict_3f then
+      _1_ = compiler_env_warn
+    else
+    _1_ = nil
+    end
+    return setmetatable({assert = assert, bit = rawget(_G, "bit"), error = error, getmetatable = safe_getmetatable, ipairs = ipairs, math = utils.copy(math), next = next, pairs = pairs, pcall = pcall, print = print, rawequal = rawequal, rawget = rawget, rawlen = rawget(_G, "rawlen"), rawset = rawset, require = safe_require, select = select, setmetatable = setmetatable, string = utils.copy(string), table = utils.copy(table), tonumber = tonumber, tostring = tostring, type = type, xpcall = xpcall}, {__index = _1_})
+  end
+  local function make_compiler_env(ast, scope, parent, strict_3f)
     local function _1_()
       return compiler.scopes.macro
     end
@@ -1525,7 +1534,9 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
     local _6_
     do
       local _5_0 = utils.root.options
-      if ((type(_5_0) == "table") and (nil ~= _5_0.compilerEnv)) then
+      if ((type(_5_0) == "table") and (_5_0["compiler-env"] == "strict")) then
+        _6_ = safe_compiler_env(true)
+      elseif ((type(_5_0) == "table") and (nil ~= _5_0.compilerEnv)) then
         local compilerEnv = _5_0.compilerEnv
         _6_ = compilerEnv
       elseif ((type(_5_0) == "table") and (nil ~= _5_0["compiler-env"])) then
@@ -1533,7 +1544,7 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
         _6_ = compiler_env
       else
         local _ = _5_0
-        _6_ = safe_compiler_env
+        _6_ = safe_compiler_env(false)
       end
     end
     return setmetatable({["assert-compile"] = compiler.assert, ["get-scope"] = _1_, ["in-scope?"] = _2_, ["list?"] = utils["list?"], ["multi-sym?"] = utils["multi-sym?"], ["sequence?"] = utils["sequence?"], ["sym?"] = utils["sym?"], ["table?"] = utils["table?"], ["varg?"] = utils["varg?"], _AST = ast, _CHUNK = parent, _IS_COMPILER = true, _SCOPE = scope, _SPECIALS = compiler.scopes.global.specials, _VARARG = utils.varg(), gensym = _3_, list = utils.list, macroexpand = _4_, sequence = utils.sequence, sym = utils.sym, unpack = unpack, view = view}, {__index = _6_})
@@ -1605,16 +1616,17 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
       return {metadata = compiler.metadata}
     end
   end
-  safe_compiler_env.require = function(modname)
-    local function _1_()
+  local function _1_(modname)
+    local function _2_()
       local scope = compiler["make-scope"](compiler.scopes.compiler)
       local env = make_compiler_env(nil, scope, nil)
       local mod = compiler_env_domodule(modname, env, nil, scope)
       macro_loaded[modname] = mod
       return mod
     end
-    return (macro_loaded[modname] or metadata_only_fennel(modname) or _1_())
+    return (macro_loaded[modname] or metadata_only_fennel(modname) or _2_())
   end
+  safe_require = _1_
   local function add_macros(macros_2a, ast, scope)
     compiler.assert(utils["table?"](macros_2a), "expected macros to be table", ast)
     for k, v in pairs(macros_2a) do
@@ -1670,10 +1682,10 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
           return error(..., 0)
         end
       end
-      local function _1_()
+      local function _2_()
         return f:read("*all"):gsub("[\13\n]*$", "")
       end
-      src = close_handlers_0_(xpcall(_1_, (package.loaded.fennel or debug).traceback))
+      src = close_handlers_0_(xpcall(_2_, (package.loaded.fennel or debug).traceback))
     end
     local ret = utils.expr(("require(\"" .. mod .. "\")"), "statement")
     local target = ("package.preload[%q]"):format(mod)
@@ -1710,13 +1722,13 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
       end
     else
       local mod = load_code(("return " .. modexpr[1]))()
-      local function _2_()
-        local _1_0 = search_module(mod)
-        if (nil ~= _1_0) then
-          local fennel_path = _1_0
+      local function _3_()
+        local _2_0 = search_module(mod)
+        if (nil ~= _2_0) then
+          local fennel_path = _2_0
           return include_path(ast, opts, fennel_path, mod, true)
         else
-          local _ = _1_0
+          local _ = _2_0
           local lua_path = search_module(mod, package.path)
           if lua_path then
             return include_path(ast, opts, lua_path, mod, false)
@@ -1727,7 +1739,7 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
           end
         end
       end
-      return (include_circular_fallback(mod, modexpr, opts.fallback, ast) or utils.root.scope.includes[mod] or _2_())
+      return (include_circular_fallback(mod, modexpr, opts.fallback, ast) or utils.root.scope.includes[mod] or _3_())
     end
   end
   doc_special("include", {"module-name-literal"}, "Like require but load the target module during compilation and embed it in the\nLua output. The module must be a string literal and resolvable at compile time.")
@@ -3016,7 +3028,35 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
         end
         return dispatch(val)
       end
+      local function extract_comments(tbl)
+        local comments = nil
+        local _0_
+        if utils["comment?"](tbl[#tbl]) then
+          _0_ = table.remove(tbl)
+        else
+        _0_ = nil
+        end
+        comments = {keys = {}, last = _0_, values = {}}
+        local last_key_3f = false
+        for i, node in ipairs(tbl) do
+          if not utils["comment?"](node) then
+            last_key_3f = not last_key_3f
+          elseif last_key_3f then
+            comments.values[tbl[(i + 1)]] = node
+          else
+            comments.keys[tbl[(i + 1)]] = node
+          end
+        end
+        for i = #tbl, 1, -1 do
+          if utils["comment?"](tbl[i]) then
+            table.remove(tbl, i)
+          end
+        end
+        return comments
+      end
       local function close_curly_table(tbl)
+        local comments = extract_comments(tbl)
+        local keys = {}
         local val = {}
         if ((#tbl % 2) ~= 0) then
           byteindex = (byteindex - 1)
@@ -3028,7 +3068,10 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
             tbl[i] = tostring(tbl[(i + 1)])
           end
           val[tbl[i]] = tbl[(i + 1)]
+          table.insert(keys, tbl[i])
         end
+        tbl.comments = comments
+        tbl.keys = keys
         return dispatch(val)
       end
       local function close_table(b)
@@ -3333,7 +3376,7 @@ package.preload["fennel.utils"] = package.preload["fennel.utils"] or function(..
   local symbol_mt = {"SYMBOL", __eq = sym_3d, __fennelview = deref, __lt = sym_3c, __tostring = deref}
   local expr_mt = {"EXPR", __tostring = deref}
   local list_mt = {"LIST", __fennelview = list__3estring, __tostring = list__3estring}
-  local comment_mt = {"COMMENT", __fennelview = comment_view, __tostring = deref}
+  local comment_mt = {"COMMENT", __eq = sym_3d, __fennelview = comment_view, __lt = sym_3c, __tostring = deref}
   local sequence_marker = {"SEQUENCE"}
   local vararg = setmetatable({"..."}, {"VARARG", __fennelview = deref, __tostring = deref})
   local getenv = nil

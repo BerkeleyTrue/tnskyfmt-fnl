@@ -1,4 +1,5 @@
 (local fennel (require :fennel))
+(set debug.traceback fennel.traceback)
 
 (local {: format-file} (require :fnlfmt))
 

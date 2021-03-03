@@ -2,6 +2,16 @@
           :b [2 3 4 "(" 4]
           :b.5 1.5})
 
-;; can't test multiple : keys because of non-deterministic sort
+{:this :table
+ ;; has a comment right before
+ :a key}
 
-{:another key : kv3}
+{:this :table
+ :has ;; a comment right before
+ "a value"}
+
+{:this :table
+ ;; has a comment at the end
+ }
+
+{:another key : kv3 : and-one-more}
