@@ -25,6 +25,10 @@
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
 
+(fn any? [tbl pred]
+  (not= 0 (length (icollect [_ v (pairs tbl)]
+                    (if (pred v) true)))))
+
 (fn view-fn-args [t view inspector indent start-indent out callee]
   "Named functions need their name and arglists to be on the first line."
   (if (fennel.sym? (. t 2))
@@ -98,8 +102,9 @@ number of handled arguments."
         (view-fn-args t view inspector indent start-indent out callee)
         3)))
 
-(fn match-same-line? [callee i out viewed]
+(fn match-same-line? [callee i out viewed t]
   (and (= :match callee) (= 0 (math.fmod i 2))
+       (not (any? t fennel.comment?)) ; just don't even try if there's comments!
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
 
@@ -116,14 +121,14 @@ number of handled arguments."
         ;; do and if don't actually have special indentation but they do need
         ;; a newline after every form, so we can't use normal call formatting
         indent (if (. one-element-per-line-forms callee)
-                   (+ start-indent 2)
+                   (+ start-indent (length callee))
                    start-indent)]
     (for [i start-index (length t)]
       (let [viewed (view (. t i) inspector indent)
             body-indent (+ indent 1 (last-line-length (. out (length out))))]
         ;; every form except match needs a newline after every form; match needs
         ;; it after every other form!
-        (if (match-same-line? callee i out viewed)
+        (if (match-same-line? callee i out viewed t)
             (do (table.insert out " ")
                 (table.insert out (view (. t i) inspector body-indent)))
             (do (table.insert out (.. "\n" (string.rep " " indent)))
@@ -220,7 +225,7 @@ When f returns a truthy value, recursively walks the children."
 
 (fn set-fennelview-metamethod [idx form parent]
   (when (and (= :table (type form)) (not (fennel.sym? form))
-             (not (fennel.comment? form)) (not= fennel.varg form))
+             (not (fennel.comment? form)) (not= (fennel.varg) form))
     (when (and (not (fennel.list? form)) (not (fennel.sequence? form)))
       (tset (getmetatable form) :__fennelview view-kv))
     true))
