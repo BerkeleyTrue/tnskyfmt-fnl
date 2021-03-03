@@ -246,6 +246,10 @@ When f returns a truthy value, recursively walks the children."
     (assert ok? val)
     val))
 
+(fn space-out-forms? [prev formatted]
+  (and (not (and (formatted:match "^ *;") (string.match prev "^ *;")))
+       (not (and (formatted:match "^%(local ") (string.match prev "^%(local ")))))
+
 (fn format-file [filename {: no-comments}]
   "Read source from a file and return formatted source."
   (let [f (match filename
@@ -260,10 +264,8 @@ When f returns a truthy value, recursively walks the children."
       (assert ok? ast)
       (let [formatted (fnlfmt ast)
             prev (. out (length out))]
-        ;; Don't add extra newlines between top-level comments.
-        (when (and prev
-                   (not (and (formatted:match "^ *;")
-                             (string.match prev "^ *;"))))
+        ;; Don't add extra newlines between top-level comments or locals.
+        (when (and prev (space-out-forms? prev formatted))
           (table.insert out ""))
         (table.insert out formatted)))
     (table.insert out "")
