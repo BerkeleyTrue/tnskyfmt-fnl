@@ -168,7 +168,9 @@ number of handled arguments."
               (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
 (fn view-hashfn [t view inspector indent view-list]
-  (.. "#" (view-list (. t 2) view inspector (+ indent 1))))
+  (if (fennel.list? (. t 2))
+      (.. "#" (view-list (. t 2) view inspector (+ indent 1)))
+      (.. "#" (view (. t 2) view inspector (+ indent 1)))))
 
 (fn view-list [t view inspector indent]
   (if (= (fennel.sym :hashfn) (. t 1))
