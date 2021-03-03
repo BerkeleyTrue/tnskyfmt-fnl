@@ -230,6 +230,11 @@ When f returns a truthy value, recursively walks the children."
       (tset (getmetatable form) :__fennelview view-kv))
     true))
 
+(fn prefer-colon? [s]
+  ;; it has to be a legal colon-string, but it shouldn't be *just* punctuation
+  (and (s:find "^[-%w?^_!$%&*+./@|<=>]+$")
+       (not (s:find "^[-?^_!$%&*+./@|<=>]+$"))))
+
 (fn fnlfmt [ast]
   "Return a formatted representation of ast."
   (let [{&as list-mt : __fennelview} (getmetatable (fennel.list))
@@ -240,15 +245,15 @@ When f returns a truthy value, recursively walks the children."
         (ok? val) (pcall fennel.view ast
                          {:empty-as-sequence? true
                           :escape-newlines? true
-                          :prefer-colon? true})]
+                          : prefer-colon?})]
     ;; clean up after the metamethod patching
     (set list-mt.__fennelview __fennelview)
     (assert ok? val)
     val))
 
-(fn space-out-forms? [prev formatted]
-  (and (not (and (formatted:match "^ *;") (string.match prev "^ *;")))
-       (not (and (formatted:match "^%(local ") (string.match prev "^%(local ")))))
+(fn space-out-forms? [prev this]
+  (and (not (and (this:match "^ *;") (string.match prev "^ *;")))
+       (not (and (this:match "^%(local ") (string.match prev "^%(local ")))))
 
 (fn format-file [filename {: no-comments}]
   "Read source from a file and return formatted source."

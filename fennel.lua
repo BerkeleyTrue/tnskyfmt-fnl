@@ -653,6 +653,8 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
       local function _5_()
         if (colon_3f ~= nil) then
           return colon_3f
+        elseif ("function" == type(options0["prefer-colon?"])) then
+          return options0["prefer-colon?"](x)
         else
           return options0["prefer-colon?"]
         end
