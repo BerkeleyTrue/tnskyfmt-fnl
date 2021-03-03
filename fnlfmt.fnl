@@ -88,18 +88,24 @@ We want everything to be on one line as much as possible, (except for let)."
                       :let true
                       :with-open true})
 
+(local force-initial-newline {:do true :eval-compiler true})
+
 (fn view-init-body [t view inspector start-indent out callee]
   "Certain forms need special handling of their first few args. Returns the
 number of handled arguments."
-  (table.insert out " ")
-  (let [indent (+ start-indent (length callee))
+  (if (. force-initial-newline callee)
+      (table.insert out (.. "\n" (string.rep " " start-indent)))
+      (table.insert out " "))
+  (let [indent (if (. force-initial-newline callee)
+                   start-indent
+                   (+ start-indent (length callee)))
         second (match (. init-bindings callee)
                  true (view-binding (. t 2) view inspector (+ indent 1) callee)
                  _ (view (. t 2) inspector indent))
-        indent (+ indent (length (second:match "[^\n]*$")))]
+        indent2 (+ indent (length (second:match "[^\n]*$")))]
     (table.insert out second)
     (if (. {:fn true :lambda true "λ" true :macro true} callee)
-        (view-fn-args t view inspector indent start-indent out callee)
+        (view-fn-args t view inspector indent2 start-indent out callee)
         3)))
 
 (fn match-same-line? [callee i out viewed t]
@@ -116,7 +122,6 @@ number of handled arguments."
                                    :->> true
                                    :-?> true
                                    :-?>> true
-                                   :do true
                                    :if true})
 
 (fn view-body [t view inspector start-indent out callee]

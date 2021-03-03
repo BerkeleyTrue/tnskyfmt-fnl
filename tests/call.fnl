@@ -29,3 +29,8 @@
                            (tween c :r 0 6
                                   {:f (fn [c]
                                         (remove fx c))}))}))))))
+
+(eval-compiler
+  (with-open [f (assert (io.open :src/fennel/macros.fnl))]
+    (.. "[===[" (f:read :*all) "]===]"))
+  (print :in-compiler))
