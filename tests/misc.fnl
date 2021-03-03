@@ -12,6 +12,10 @@
                 (: :gsub " %)" ")"))]
     ret))
 
+(let [;; start with
+      a comment]
+  nil)
+
 ;; this )comment has a ( in it!
 
 xyz

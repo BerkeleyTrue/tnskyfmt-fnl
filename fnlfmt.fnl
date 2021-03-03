@@ -60,7 +60,7 @@ We want everything to be on one line as much as possible, (except for let)."
       (while (fennel.comment? (. bindings (+ i offset)))
         (when (< 80 (+ indent 1 (length (tostring (. bindings (+ i offset))))))
           (table.insert out (.. "\n" (string.rep " " start-indent))))
-        (when (not (first-thing-in-line? out))
+        (when (and (not (first-thing-in-line? out)) (not= (length out) 1))
           (table.insert out " "))
         (table.insert out (view (. bindings (+ i offset))))
         (table.insert out (.. "\n" (string.rep " " start-indent)))
@@ -188,7 +188,7 @@ number of handled arguments."
         k (if (shorthand-pair? key val)
               ":"
               (view key inspector (+ indent 1) true))
-        v (view val inspector (+ indent (slength key) 1))]
+        v (view val inspector (+ indent (slength k) 1))]
     (.. (maybe-attach-comment k indent (. mt.comments.keys key)) " "
         (maybe-attach-comment v indent (. mt.comments.values val)))))
 

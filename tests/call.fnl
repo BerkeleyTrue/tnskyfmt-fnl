@@ -12,3 +12,16 @@
               (last-line-length (. out (length out)))) 80)))
 
 (#(+ $ 5) 9)
+
+(fn blood [v n c]
+  (let [pv (->view (vadd (vmul v 8) (point 4 4)))]
+    (for [i 1 n]
+      (var c {:type :circ :pos (vadd pv (rand-point 4)) :r 1 :c (or c 6)})
+      (add fx c)
+      (wait (rand 5)
+            (fn []
+              (tween c :r (rand 4) 6
+                     {:f (fn [c]
+                           (tween c :r 0 6
+                                  {:f (fn [c]
+                                        (remove fx c))}))}))))))
