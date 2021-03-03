@@ -152,15 +152,20 @@ number of handled arguments."
           (do (table.insert out viewed)
               (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
+(fn view-hashfn [t view inspector indent view-list]
+  (.. "#" (view-list (. t 2) view inspector (+ indent 1))))
+
 (fn view-list [t view inspector indent]
-  (let [callee (view (. t 1) inspector (+ indent 1))
-        out ["(" callee]]
-    ;; indent differently if it's calling a special form with body args
-    (if (. body-specials callee)
-        (view-body t view inspector (+ indent 2) out callee)
-        (view-call t view inspector (+ indent (length callee) 2) out))
-    (table.insert out ")")
-    (table.concat out)))
+  (if (= (fennel.sym :hashfn) (. t 1))
+      (view-hashfn t view inspector indent view-list)
+      (let [callee (view (. t 1) inspector (+ indent 1))
+            out ["(" callee]]
+        ;; indent differently if it's calling a special form with body args
+        (if (. body-specials callee)
+            (view-body t view inspector (+ indent 2) out callee)
+            (view-call t view inspector (+ indent (length callee) 2) out))
+        (table.insert out ")")
+        (table.concat out))))
 
 (local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
 

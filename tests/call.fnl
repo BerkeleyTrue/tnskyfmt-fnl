@@ -10,3 +10,5 @@
   (and (= :match callee) (= 0 (math.fmod i 2))
        (<= (+ (or (string.find viewed "\n") (length viewed)) 1
               (last-line-length (. out (length out)))) 80)))
+
+(#(+ $ 5) 9)
