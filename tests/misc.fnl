@@ -16,6 +16,9 @@
       a comment]
   nil)
 
+(local stringy "this string is really long; in fact, putting a backslash n in it
+for the newline would push it way over the limit")
+
 ;; this )comment has a ( in it!
 
 xyz

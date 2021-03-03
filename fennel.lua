@@ -664,7 +664,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
       elseif (tv == "string") then
         local _6_0 = nil
         local function _7_()
-          if options0["escape-newlines?"] then
+          if (options0["escape-newlines?"] and (#x < (options0["line-length"] - indent0))) then
             return "\\n"
           else
             return "\n"

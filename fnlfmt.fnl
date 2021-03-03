@@ -98,7 +98,7 @@ number of handled arguments."
                  _ (view (. t 2) inspector indent))
         indent (+ indent (length (second:match "[^\n]*$")))]
     (table.insert out second)
-    (if (. {:fn true :lambda true "λ" true} callee)
+    (if (. {:fn true :lambda true "λ" true :macro true} callee)
         (view-fn-args t view inspector indent start-indent out callee)
         3)))
 
@@ -107,6 +107,10 @@ number of handled arguments."
   (and (= :match callee) (= 0 (math.fmod i 2)) (not (any? t fennel.comment?))
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
+
+(fn trailing-comment? [out viewed body-indent]
+  (and (viewed:match "^; ")
+       (<= (+ body-indent (length (. out (length out)))) 80)))
 
 (local one-element-per-line-forms {:-> true
                                    :->> true
@@ -128,7 +132,8 @@ number of handled arguments."
             body-indent (+ indent 1 (last-line-length (. out (length out))))]
         ;; every form except match needs a newline after every form; match needs
         ;; it after every other form!
-        (if (match-same-line? callee i out viewed t)
+        (if (or (match-same-line? callee i out viewed t)
+                (trailing-comment? out viewed body-indent))
             (do (table.insert out " ")
                 (table.insert out (view (. t i) inspector body-indent)))
             (do (table.insert out (.. "\n" (string.rep " " indent)))

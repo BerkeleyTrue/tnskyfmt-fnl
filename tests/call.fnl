@@ -6,6 +6,10 @@
 
 (call (call 1 2))
 
+(if this?
+    then ; <- sometimes!
+    that)
+
 (fn match-same-line? [callee i out viewed]
   (and (= :match callee) (= 0 (math.fmod i 2))
        (<= (+ (or (string.find viewed "\n") (length viewed)) 1
