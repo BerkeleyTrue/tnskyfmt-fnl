@@ -20,6 +20,8 @@ Send patches directly to the maintainer or the
 
 ## Known issues
 
+* Trailing comments at end of a line often get pushed down to the next line.
+* One-line `if` and threading forms will always get turned into multi-line.
 * When using fnlfmt programmatically, it may modify the AST argument.
 
 ## License

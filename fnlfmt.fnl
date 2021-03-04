@@ -167,14 +167,16 @@ number of handled arguments."
           (do (table.insert out viewed)
               (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
-(fn view-hashfn [t view inspector indent view-list]
-  (if (fennel.list? (. t 2))
-      (.. "#" (view-list (. t 2) view inspector (+ indent 1)))
-      (.. "#" (view (. t 2) view inspector (+ indent 1)))))
+(local sugars {:hashfn "#"
+               :quote "`"
+               :unquote ","})
+
+(fn sweeten [t view inspector indent view-list]
+  (.. (. sugars (tostring (. t 1))) (view (. t 2) inspector (+ indent 1))))
 
 (fn view-list [t view inspector indent]
-  (if (= (fennel.sym :hashfn) (. t 1))
-      (view-hashfn t view inspector indent view-list)
+  (if (. sugars (tostring (. t 1)))
+      (sweeten t view inspector indent view-list)
       (let [callee (view (. t 1) inspector (+ indent 1))
             out ["(" callee]]
         ;; indent differently if it's calling a special form with body args

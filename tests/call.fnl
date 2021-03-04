@@ -15,8 +15,6 @@
        (<= (+ (or (string.find viewed "\n") (length viewed)) 1
               (last-line-length (. out (length out)))) 80)))
 
-(#(+ $ 5) 9)
-
 (fn blood [v n c]
   (let [pv (->view (vadd (vmul v 8) (point 4 4)))]
     (for [i 1 n]

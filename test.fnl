@@ -7,7 +7,8 @@
               :semicolon
               :match
               :binding
-              :comment])
+              :comment
+              :sugar])
 
 (var pass 0)
 
