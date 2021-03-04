@@ -32,3 +32,8 @@
   (with-open [f (assert (io.open :src/fennel/macros.fnl))]
     (.. "[===[" (f:read :*all) "]===]"))
   (print :in-compiler))
+
+(fn SPECIALS.fn [ast scope parent]
+  (let [multi (and fn-sym (utils.multi-sym? (. fn-sym 1)))
+        (fn-name local-fn? index) (get-fn-name ast scope fn-sym multi)]
+    (print :noooo)))

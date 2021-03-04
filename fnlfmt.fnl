@@ -49,11 +49,18 @@
   (let [last (or (. out (length out)) "")]
     (not (: (last:match "[^\n]*$") :match "[^ ]"))))
 
+(fn break-let? [callee count viewed next-ast indent]
+  (and (= :let callee) (= 1 (math.fmod count 2))
+       ;; does the trailing comment fit?
+       (not (and (fennel.comment? next-ast)
+                 (<= (+ indent 1 (last-line-length viewed) 1
+                        (length (tostring next-ast))) 80)))))
+
 (fn view-binding [bindings view inspector start-indent callee]
   "Binding sequences need special care; regular sequence assumptions don't work.
 We want everything to be on one line as much as possible, (except for let)."
   (let [out ["["]]
-    (var (offset count) (values 0 0))
+    (var (offset count) (values 0 1))
     (var indent start-indent)
     (for [i 1 (length bindings)]
       ;; when a binding has a comment in it, emit it but don't let it throw
@@ -70,17 +77,15 @@ We want everything to be on one line as much as possible, (except for let)."
       (let [i (+ offset i)
             viewed (view (. bindings i) inspector indent)]
         (when (<= i (length bindings))
-          (if (or (first-thing-in-line? out) (= i 1))
-              nil
-              (and (= :let callee) (= 0 (math.fmod count 2)))
-              (do
-                (table.insert out (.. "\n" (string.rep " " start-indent)))
-                (set indent start-indent))
-              (table.insert out " "))
           (table.insert out viewed)
           (set count (+ count 1))
-          ;; TODO: don't do this every time! only if we didn't just newline
-          (set indent (+ indent 1 (last-line-length viewed))))))
+          (when (< i (length bindings))
+            (if (break-let? callee count viewed (. bindings (+ i 1)) indent)
+                (do
+                  (table.insert out (.. "\n" (string.rep " " start-indent)))
+                  (set indent start-indent))
+                (do (set indent (+ indent 1 (last-line-length viewed)))
+                    (table.insert out " ")))))))
     (table.insert out "]")
     (table.concat out)))
 

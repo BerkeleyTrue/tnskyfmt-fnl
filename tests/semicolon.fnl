@@ -5,9 +5,15 @@
        "what will we do??")
 
 (do
-  (let [this form ;; has a comment
+  (let [this form ; has a trailing comment
         ;; so many
         ;; such comments aaaah
         in it! ;; and another
         a 9]
     (oh-no!)))
+
+(fn flatten-chunk-correlated [main-chunk]
+  (each [_ subchunk (ipairs chunk)]
+    (when (or subchunk.leaf (> (# subchunk) 0)) ; trailing
+      ;; don't increase line unless it's from the same file
+      (print :sup))))
