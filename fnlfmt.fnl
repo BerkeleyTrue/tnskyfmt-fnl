@@ -32,7 +32,7 @@
 (fn view-fn-args [t view inspector indent start-indent out callee]
   "Named functions need their name and arglists to be on the first line."
   (if (fennel.sym? (. t 2))
-      (let [third (view (. t 3) inspector indent)]
+      (let [third (view (. t 3) inspector (+ indent 1))]
         (table.insert out " ")
         (table.insert out third)
         (if (= :string (type (. t 4)))
@@ -162,7 +162,8 @@ number of handled arguments."
     (table.insert out " ")
     (set indent (+ indent 1))
     (let [viewed (view (. t i) inspector (- indent 1))]
-      (if (and (line-exceeded? inspector indent viewed) (< 2 i))
+      (if (or (fennel.comment? (. t (- i 1)))
+              (and (line-exceeded? inspector indent viewed) (< 2 i)))
           (set indent (view-with-newline view inspector out t i start-indent))
           (do (table.insert out viewed)
               (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
@@ -265,9 +266,9 @@ When f returns a truthy value, recursively walks the children."
     (assert ok? val)
     val))
 
-(fn space-out-forms? [prev this]
-  (and (not (and (this:match "^ *;") (string.match prev "^ *;")))
-       (not (and (this:match "^%(local ") (string.match prev "^%(local ")))))
+(fn space-out-forms? [prev-ast ast]
+  "Use previous line numbering to determine whether to space out forms."
+  (not (and prev-ast.line ast.line (= 1 (- ast.line prev-ast.line)))))
 
 (fn format-file [filename {: no-comments}]
   "Read source from a file and return formatted source."
@@ -279,7 +280,7 @@ When f returns a truthy value, recursively walks the children."
                    (fennel.parser filename {:comments (not no-comments)}))
         out []]
     (f:close)
-    (var skip-next? false)
+    (var (skip-next? prev-ast) false)
     (each [ok? ast parser]
       (assert ok? ast)
       (if (and skip-next? (fennel.list? ast))
@@ -292,10 +293,11 @@ When f returns a truthy value, recursively walks the children."
           (let [formatted (fnlfmt ast)
                 prev (. out (length out))]
             ;; Don't add extra newlines between top-level comments or locals.
-            (when (and prev (space-out-forms? prev formatted))
+            (when (and prev-ast (space-out-forms? prev-ast ast))
               (table.insert out ""))
             (table.insert out formatted)
-            (set skip-next? false))))
+            (set skip-next? false)))
+      (set prev-ast ast))
     (table.insert out "")
     (table.concat out "\n")))
 

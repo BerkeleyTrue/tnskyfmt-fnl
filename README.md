@@ -21,12 +21,35 @@ before them:
   ...)
 
 ;; fnlfmt: skip
-(local this-table ["benefits" :from
-                   "different kind of" :FORMATTING])
+(local this-table ["benefits"          :from
+                   "different kind of" :FORMATTING
+                   "because of"        :reasons])
 
 (fn this-function [will-be]
   (formatted :normally "again"))
 ```
+
+## Description
+
+For the most part, `fnlfmt` follows established lisp conventions when
+determining how to format a given piece of code. Key/value tables are
+shown with each key/value pair on its own line, unless they are small
+enough to all fit on one line. Sequential tables similarly have each
+element on their own line unless they fit all on a single line. Tables
+with string keys and symbol values will use `{: foo : bar}` shorthand
+notation where possible.
+
+Calls are formatted differently depending on whether they are calling
+a regular function/macro or whether they're calling a special macro
+which is known to have a "body"; in the latter case every element is
+given its own line, usually indented 2 spaces in. Calls to `match`
+will try to fit their pattern and body on the same line where possible.
+
+Strings are formatted using `:colon-notation` where possible, unless
+they consist entirely of punctuation.
+
+Top level forms may or may not have blank lines between them depending on
+whether the input code spaces them out.
 
 ## Known issues
 

@@ -3009,7 +3009,7 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
           end
           return parse_comment(getb(), _1_())
         elseif (options and options.comments) then
-          return dispatch(utils.comment(table.concat(contents)))
+          return dispatch(utils.comment(table.concat(contents), {filename = filename, line = (line - 1)}))
         else
           return b
         end
@@ -3409,8 +3409,11 @@ package.preload["fennel.utils"] = package.preload["fennel.utils"] or function(..
   local function expr(strcode, etype)
     return setmetatable({strcode, type = etype}, expr_mt)
   end
-  local function comment_2a(contents)
-    return setmetatable({contents}, comment_mt)
+  local function comment_2a(contents, source)
+    local _1_ = (source or {})
+    local filename = _1_["filename"]
+    local line = _1_["line"]
+    return setmetatable({contents, filename = filename, line = line}, comment_mt)
   end
   local function varg()
     return vararg
