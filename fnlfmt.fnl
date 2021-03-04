@@ -36,11 +36,12 @@
         (table.insert out " ")
         (table.insert out third)
         (if (= :string (type (. t 4)))
-            (do (table.insert out (.. "\n" (string.rep " " start-indent)))
-                (set inspector.escape-newlines? false)
-                (table.insert out (view (. t 4) inspector start-indent))
-                (set inspector.escape-newlines? true)
-                5)
+            (do
+              (table.insert out (.. "\n" (string.rep " " start-indent)))
+              (set inspector.escape-newlines? false)
+              (table.insert out (view (. t 4) inspector start-indent))
+              (set inspector.escape-newlines? true)
+              5)
             4))
       3))
 
@@ -72,11 +73,13 @@ We want everything to be on one line as much as possible, (except for let)."
           (if (or (first-thing-in-line? out) (= i 1))
               nil
               (and (= :let callee) (= 0 (math.fmod count 2)))
-              (do (table.insert out (.. "\n" (string.rep " " start-indent)))
-                  (set indent start-indent))
+              (do
+                (table.insert out (.. "\n" (string.rep " " start-indent)))
+                (set indent start-indent))
               (table.insert out " "))
           (table.insert out viewed)
           (set count (+ count 1))
+          ;; TODO: don't do this every time! only if we didn't just newline
           (set indent (+ indent 1 (last-line-length viewed))))))
     (table.insert out "]")
     (table.concat out)))
@@ -115,8 +118,8 @@ number of handled arguments."
               1 (last-line-length (. out (length out)))) 80)))
 
 (fn trailing-comment? [out viewed body-indent]
-  (and (viewed:match "^; ")
-       (<= (+ body-indent (length (. out (length out)))) 80)))
+  (and (viewed:match "^; ") (<= (+ body-indent (length (. out (length out))))
+                                80)))
 
 (local one-element-per-line-forms {:-> true
                                    :->> true
@@ -139,10 +142,12 @@ number of handled arguments."
         ;; it after every other form!
         (if (or (match-same-line? callee i out viewed t)
                 (trailing-comment? out viewed body-indent))
-            (do (table.insert out " ")
-                (table.insert out (view (. t i) inspector body-indent)))
-            (do (table.insert out (.. "\n" (string.rep " " indent)))
-                (table.insert out viewed)))))))
+            (do
+              (table.insert out " ")
+              (table.insert out (view (. t i) inspector body-indent)))
+            (do
+              (table.insert out (.. "\n" (string.rep " " indent)))
+              (table.insert out viewed)))))))
 
 (fn line-exceeded? [inspector indent viewed]
   (< inspector.line-length (+ indent (last-line-length viewed))))
@@ -165,12 +170,11 @@ number of handled arguments."
       (if (or (fennel.comment? (. t (- i 1)))
               (and (line-exceeded? inspector indent viewed) (< 2 i)))
           (set indent (view-with-newline view inspector out t i start-indent))
-          (do (table.insert out viewed)
-              (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
+          (do
+            (table.insert out viewed)
+            (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
-(local sugars {:hashfn "#"
-               :quote "`"
-               :unquote ","})
+(local sugars {:hashfn "#" :quote "`" :unquote ","})
 
 (fn sweeten [t view inspector indent view-list]
   (.. (. sugars (tostring (. t 1))) (view (. t 2) inspector (+ indent 1))))
@@ -283,22 +287,23 @@ When f returns a truthy value, recursively walks the children."
     (var (skip-next? prev-ast) false)
     (each [ok? ast parser]
       (assert ok? ast)
-      (if (and skip-next? (fennel.list? ast))
-          (do (table.insert out (contents:sub ast.bytestart ast.byteend))
-              (set skip-next? false))
+      (if (and skip-next? ast.bytestart ast.byteend)
+          (do
+            (table.insert out (contents:sub ast.bytestart ast.byteend))
+            (set skip-next? false))
           (= (fennel.comment ";; fnlfmt: skip") ast)
-          (do (set skip-next? true)
-              (table.insert out "")
-              (table.insert out (tostring ast)))
-          (let [formatted (fnlfmt ast)
-                prev (. out (length out))]
-            ;; Don't add extra newlines between top-level comments or locals.
+          (do
+            (set skip-next? true)
+            (table.insert out "")
+            (table.insert out (tostring ast)))
+          (do
             (when (and prev-ast (space-out-forms? prev-ast ast))
               (table.insert out ""))
-            (table.insert out formatted)
+            (table.insert out (fnlfmt ast))
             (set skip-next? false)))
       (set prev-ast ast))
     (table.insert out "")
     (table.concat out "\n")))
 
-{: fnlfmt : format-file}
+{: fnlfmt : format-file :version :0.1.0-dev}
+

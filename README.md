@@ -11,7 +11,7 @@ the `--no-comments` flag produces reasonable (non-commented) results.
 
     $ make # compile fnlfmt script you can place on your $PATH
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
-    $ cat my-file.fnl | fnlfmt - # pipe fennel to stdin, get formatted stdout
+    $ curl localhost:8080/my-file.fnl | ./fnlfmt - # pipe to stdin
 
 You can skip reformatting of top-level forms by placing a comment
 before them:
@@ -60,7 +60,7 @@ whether the input code spaces them out.
 ## Contributing
 
 Send patches directly to the maintainer or the
-[Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel)
+[Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel).
 
 ## License
 

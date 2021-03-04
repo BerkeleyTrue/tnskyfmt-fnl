@@ -6,3 +6,11 @@
 (collect [k v ;; what
           (pairs [])]
   (print k v))
+
+(fn compile-binary [lua-c-path
+                    executable-name
+                    static-lua
+                    lua-include-dir
+                    native-thingy]
+  (let [cc (or (os.getenv :CC) :cc)]
+    nil))
