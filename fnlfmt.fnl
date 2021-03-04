@@ -274,19 +274,28 @@ When f returns a truthy value, recursively walks the children."
   (let [f (match filename
             "-" io.stdin
             _ (assert (io.open filename :r) "File not found."))
-        parser (-> (f:read :*all)
-                   (fennel.stringStream)
+        contents (f:read :*all)
+        parser (-> (fennel.stringStream contents)
                    (fennel.parser filename {:comments (not no-comments)}))
         out []]
     (f:close)
+    (var skip-next? false)
     (each [ok? ast parser]
       (assert ok? ast)
-      (let [formatted (fnlfmt ast)
-            prev (. out (length out))]
-        ;; Don't add extra newlines between top-level comments or locals.
-        (when (and prev (space-out-forms? prev formatted))
-          (table.insert out ""))
-        (table.insert out formatted)))
+      (if (and skip-next? (fennel.list? ast))
+          (do (table.insert out (contents:sub ast.bytestart ast.byteend))
+              (set skip-next? false))
+          (= (fennel.comment ";; fnlfmt: skip") ast)
+          (do (set skip-next? true)
+              (table.insert out "")
+              (table.insert out (tostring ast)))
+          (let [formatted (fnlfmt ast)
+                prev (. out (length out))]
+            ;; Don't add extra newlines between top-level comments or locals.
+            (when (and prev (space-out-forms? prev formatted))
+              (table.insert out ""))
+            (table.insert out formatted)
+            (set skip-next? false))))
     (table.insert out "")
     (table.concat out "\n")))
 

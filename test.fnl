@@ -8,7 +8,8 @@
               :match
               :binding
               :comment
-              :sugar])
+              :sugar
+              :skip])
 
 (var pass 0)
 

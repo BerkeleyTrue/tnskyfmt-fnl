@@ -13,16 +13,31 @@ the `--no-comments` flag produces reasonable (non-commented) results.
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
     $ cat my-file.fnl | fnlfmt - # pipe fennel to stdin, get formatted stdout
 
-## Contributing
+You can skip reformatting of top-level forms by placing a comment
+before them:
 
-Send patches directly to the maintainer or the
-[Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel)
+```fennel
+(fn this-function [can be formatted ...]
+  ...)
+
+;; fnlfmt: skip
+(local this-table ["benefits" :from
+                   "different kind of" :FORMATTING])
+
+(fn this-function [will-be]
+  (formatted :normally "again"))
+```
 
 ## Known issues
 
 * Trailing comments at end of a line often get pushed down to the next line.
 * One-line `if` and threading forms will always get turned into multi-line.
 * When using fnlfmt programmatically, it may modify the AST argument.
+
+## Contributing
+
+Send patches directly to the maintainer or the
+[Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel)
 
 ## License
 
