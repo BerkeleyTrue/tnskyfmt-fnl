@@ -31,6 +31,12 @@ before them:
 
 ## Description
 
+Formatting is essentially an aesthetic process; any automated attempt
+at doing it will necessarily encounter situations where it produces
+output that doesn't look as good as it would if a human were making
+the decisions. That said, the goal is to at worst emit output which,
+if less than ideal, is at least not objectionable.
+
 For the most part, `fnlfmt` follows established lisp conventions when
 determining how to format a given piece of code. Key/value tables are
 shown with each key/value pair on its own line, unless they are small

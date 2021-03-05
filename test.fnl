@@ -9,7 +9,8 @@
               :binding
               :comment
               :sugar
-              :skip])
+              :skip
+              :macro])
 
 (var pass 0)
 

@@ -108,11 +108,13 @@ number of handled arguments."
   (let [indent (if (. force-initial-newline callee)
                    start-indent
                    (+ start-indent (length callee)))
-        second (match (. init-bindings callee)
+        second (match (and (. init-bindings callee)
+                           (not= :unquote (tostring (. t 2 1))))
                  true (view-binding (. t 2) view inspector (+ indent 1) callee)
                  _ (view (. t 2) inspector indent))
         indent2 (+ indent (length (second:match "[^\n]*$")))]
-    (table.insert out second)
+    (when (not= nil (. t 2))
+      (table.insert out second))
     (if (. {:fn true :lambda true "λ" true :macro true} callee)
         (view-fn-args t view inspector indent2 start-indent out callee)
         3)))
@@ -140,7 +142,7 @@ number of handled arguments."
         indent (if (. one-element-per-line-forms callee)
                    (+ start-indent (length callee))
                    start-indent)]
-    (for [i start-index (length t)]
+    (for [i (or start-index 99) (length t)]
       (let [viewed (view (. t i) inspector indent)
             body-indent (+ indent 1 (last-line-length (. out (length out))))]
         ;; every form except match needs a newline after every form; match needs
