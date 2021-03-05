@@ -2,11 +2,6 @@
 
 Format your Fennel!
 
-Note that this is somewhat of a work in progress and should not at
-this point be considered authoritative on how to format Fennel code.
-However, almost all of the current bugs involve comments, so using
-the `--no-comments` flag produces reasonable (non-commented) results.
-
 ## Usage
 
     $ make # compile fnlfmt script you can place on your $PATH
@@ -35,7 +30,9 @@ Formatting is essentially an aesthetic process; any automated attempt
 at doing it will necessarily encounter situations where it produces
 output that doesn't look as good as it would if a human were making
 the decisions. That said, the goal is to at worst emit output which,
-if less than ideal, is at least not objectionable.
+if less than ideal, is at least not objectionable. Currently the
+indentation decisions it makes are great, but it occasionally puts
+newlines in places that a human would not.
 
 For the most part, `fnlfmt` follows established lisp conventions when
 determining how to format a given piece of code. Key/value tables are
@@ -61,10 +58,13 @@ had them as one-liners.
 
 ## Known issues
 
+* The pattern where you have `if` with its conditions and bodies on
+  the same line is not well-supported.
 * When using fnlfmt programmatically, it may modify the AST argument.
 * Macros that aren't built-in are always indented like functions.
 * Preserving multi-line forms doesn't work if the first or second
   argument is a number, string, boolean, or varg.
+* Page breaks will not be preserved.
 
 ## Contributing
 

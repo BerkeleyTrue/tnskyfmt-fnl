@@ -21,3 +21,9 @@
       ))
   (this is a normal call ; which ends in a comment
         ))
+
+(let [rootstr (tostring root)
+      ;; this one goes over 80 columns! oh no fnlmt; what are you gonna do bout it?
+      ;; just gon let that one slide pal but I got my eye on you
+      a 2]
+  nil)

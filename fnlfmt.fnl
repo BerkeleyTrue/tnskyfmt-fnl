@@ -39,13 +39,14 @@
   "Binding sequences need special care; regular sequence assumptions don't work.
 We want everything to be on one line as much as possible, (except for let)."
   (let [out ["["]]
-    (var (offset count) (values 0 1))
-    (var indent start-indent)
+    (var (indent offset count) (values start-indent 0 1))
     (for [i 1 (length bindings)]
       ;; when a binding has a comment in it, emit it but don't let it throw
       ;; off the name/value pair counting
       (while (fennel.comment? (. bindings (+ i offset)))
-        (when (< 80 (+ indent 1 (length (tostring (. bindings (+ i offset))))))
+        (when (and (< 80 (+ indent
+                            (length (tostring (. bindings (+ i offset))))))
+                   (: (. out (length out)) :match "^[^%s]"))
           (table.insert out (.. "\n" (string.rep " " start-indent))))
         (when (and (not (first-thing-in-line? out)) (not= (length out) 1))
           (table.insert out " "))
