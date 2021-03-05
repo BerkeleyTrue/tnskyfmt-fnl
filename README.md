@@ -53,9 +53,9 @@ whether the input code spaces them out.
 
 ## Known issues
 
-* Trailing comments at end of a line often get pushed down to the next line.
 * One-line `if` and threading forms will always get turned into multi-line.
 * When using fnlfmt programmatically, it may modify the AST argument.
+* Macros that aren't built-in are always indented like functions.
 
 ## Contributing
 

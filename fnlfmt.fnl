@@ -84,8 +84,9 @@ We want everything to be on one line as much as possible, (except for let)."
                 (do
                   (table.insert out (.. "\n" (string.rep " " start-indent)))
                   (set indent start-indent))
-                (do (set indent (+ indent 1 (last-line-length viewed)))
-                    (table.insert out " ")))))))
+                (do
+                  (set indent (+ indent 1 (last-line-length viewed)))
+                  (table.insert out " ")))))))
     (table.insert out "]")
     (table.concat out)))
 
@@ -122,9 +123,8 @@ number of handled arguments."
        (<= (+ (or (string.find viewed "\n") (length (viewed:match "[^\n]*$")))
               1 (last-line-length (. out (length out)))) 80)))
 
-(fn trailing-comment? [out viewed body-indent]
-  (and (viewed:match "^; ") (<= (+ body-indent (length (. out (length out))))
-                                80)))
+(fn trailing-comment? [out viewed body-indent indent]
+  (and (viewed:match "^; ") (<= body-indent 80)))
 
 (local one-element-per-line-forms {:-> true
                                    :->> true
@@ -146,7 +146,7 @@ number of handled arguments."
         ;; every form except match needs a newline after every form; match needs
         ;; it after every other form!
         (if (or (match-same-line? callee i out viewed t)
-                (trailing-comment? out viewed body-indent))
+                (trailing-comment? out viewed body-indent indent))
             (do
               (table.insert out " ")
               (table.insert out (view (. t i) inspector body-indent)))
@@ -179,6 +179,10 @@ number of handled arguments."
             (table.insert out viewed)
             (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
+(fn newline-if-ends-in-comment [out indent]
+  (when (: (. out (length out)) :match "^ *;[^\n]*$")
+    (table.insert out (.. "\n" (string.rep " " indent)))))
+
 (local sugars {:hashfn "#" :quote "`" :unquote ","})
 
 (fn sweeten [t view inspector indent view-list]
@@ -188,11 +192,15 @@ number of handled arguments."
   (if (. sugars (tostring (. t 1)))
       (sweeten t view inspector indent view-list)
       (let [callee (view (. t 1) inspector (+ indent 1))
-            out ["(" callee]]
+            out ["(" callee]
+            indent (if (. body-specials callee)
+                       (+ indent 2)
+                       (+ indent (length callee) 2))]
         ;; indent differently if it's calling a special form with body args
         (if (. body-specials callee)
-            (view-body t view inspector (+ indent 2) out callee)
-            (view-call t view inspector (+ indent (length callee) 2) out))
+            (view-body t view inspector indent out callee)
+            (view-call t view inspector indent out))
+        (newline-if-ends-in-comment out indent)
         (table.insert out ")")
         (table.concat out))))
 
