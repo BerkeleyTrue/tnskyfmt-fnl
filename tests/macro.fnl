@@ -12,7 +12,7 @@ encountering an error before propagating it."
                       (error ... 0)))
         traceback `(. (or package.loaded.fennel debug) :traceback)
         out [`(if) `(fn )]]
-    (for [i 1 (# closable-bindings) 2]
+    (for [i 1 (length closable-bindings) 2]
       (assert (sym? (. closable-bindings i))
               "with-open only allows symbols in bindings")
       (table.insert closer 4 `(: ,(. closable-bindings i) :close)))

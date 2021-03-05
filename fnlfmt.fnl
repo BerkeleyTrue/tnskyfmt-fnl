@@ -206,10 +206,14 @@ number of handled arguments."
                    :doto true
                    :if true})
 
+(local renames {"#" :length
+                "~=" :not=})
+
 (fn view-list [t view inspector start-indent]
   (if (. sugars (tostring (. t 1)))
       (sweeten t view inspector start-indent view-list)
       (let [callee (view (. t 1) inspector (+ start-indent 1))
+            callee (or (. renames callee) callee)
             out ["(" callee]
             indent (if (. body-specials callee)
                        (+ start-indent 2)

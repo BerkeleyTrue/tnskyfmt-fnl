@@ -14,7 +14,7 @@
 
 (fn flatten-chunk-correlated [main-chunk]
   (each [_ subchunk (ipairs chunk)]
-    (when (or subchunk.leaf (> (# subchunk) 0)) ; trailing
+    (when (or subchunk.leaf (> (length subchunk) 0)) ; trailing
       ;; don't increase line unless it's from the same file
       (print :sup)
       ;; this one ends in a comment!

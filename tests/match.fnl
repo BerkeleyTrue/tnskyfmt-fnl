@@ -14,7 +14,7 @@
   (:body-special prev-indent)
   (+ prev-indent 2)
   (:call prev-indent function-name)
-  (+ prev-indent (# function-name) 2))
+  (+ prev-indent (length function-name) 2))
 
 (fn *macros*.pretty-macrodebug [expr return-string?]
   "Patched version of Fennel's macrodebug that calls fnlfmt on expanded form."
