@@ -113,6 +113,9 @@ number of handled arguments."
                                    :-?>> true
                                    :if true})
 
+(fn space-out-fns? [prev viewed]
+  (or (prev:match "^ *%(fn [^%[]") (viewed:match "^ *%(fn [^%[]")))
+
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
   (let [start-index (view-init-body t view inspector start-indent out callee)
@@ -132,6 +135,8 @@ number of handled arguments."
               (table.insert out " ")
               (table.insert out (view (. t i) inspector body-indent)))
             (do
+              (when (space-out-fns? (. out (length out)) viewed)
+                (table.insert out "\n"))
               (table.insert out (.. "\n" (string.rep " " indent)))
               (table.insert out viewed)))))))
 

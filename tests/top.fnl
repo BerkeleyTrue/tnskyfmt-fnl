@@ -20,3 +20,16 @@
 (->> hey doin a thing)
 
 (local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
+
+(fn abc []
+  (var x 1)
+
+  (fn xyz []
+    123)
+
+  (fn def []
+    456)
+
+  (.. (xyz) (def))
+  (fn []
+    :return-a-function))
