@@ -1,25 +1,4 @@
 (local fennel (require :fennel))
-(local body-specials {:-> true
-                      :->> true
-                      :-?> true
-                      :-?>> true
-                      :collect true
-                      :do true
-                      :doto true
-                      :each true
-                      :eval-compiler true
-                      :fn true
-                      :for true
-                      :icollect true
-                      :if true
-                      :lambda true
-                      :let true
-                      :macro true
-                      :match true
-                      :when true
-                      :while true
-                      :with-open true
-                      "λ" true})
 
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
@@ -181,6 +160,15 @@ number of handled arguments."
             (table.insert out viewed)
             (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
+(fn originally-different-lines? [[_ first second] line]
+  (and (= :table (type first)) (= :table (type second))
+       (not= line (or first.line line) (or second.line line))))
+
+(fn view-maybe-body [t view inspector indent start-indent out callee]
+  (if (originally-different-lines? t t.line)
+      (view-body t view inspector (+ start-indent 2) out callee)
+      (view-call t view inspector indent out callee)))
+
 (fn newline-if-ends-in-comment [out indent]
   (when (: (. out (length out)) :match "^ *;[^\n]*$")
     (table.insert out (.. "\n" (string.rep " " indent)))))
@@ -190,24 +178,50 @@ number of handled arguments."
 (fn sweeten [t view inspector indent view-list]
   (.. (. sugars (tostring (. t 1))) (view (. t 2) inspector (+ indent 1))))
 
-(fn view-list [t view inspector indent]
+(local body-specials {:collect true
+                      :do true
+                      :each true
+                      :eval-compiler true
+                      :fn true
+                      :for true
+                      :icollect true
+                      :lambda true
+                      :let true
+                      :macro true
+                      :match true
+                      :when true
+                      :while true
+                      :with-open true
+                      "λ" true})
+
+(local maybe-body {:-> true
+                   :->> true
+                   :-?> true
+                   :-?>> true
+                   :doto true
+                   :if true})
+
+(fn view-list [t view inspector start-indent]
   (if (. sugars (tostring (. t 1)))
-      (sweeten t view inspector indent view-list)
-      (let [callee (view (. t 1) inspector (+ indent 1))
+      (sweeten t view inspector start-indent view-list)
+      (let [callee (view (. t 1) inspector (+ start-indent 1))
             out ["(" callee]
             indent (if (. body-specials callee)
-                       (+ indent 2)
-                       (+ indent (length callee) 2))]
+                       (+ start-indent 2)
+                       (+ start-indent (length callee) 2))]
         ;; indent differently if it's calling a special form with body args
         (if (. body-specials callee)
             (view-body t view inspector indent out callee)
+            ;; in some cases we treat it differently depending on whether the
+            ;; original code was multi-line or not
+            (. maybe-body callee)
+            (view-maybe-body t view inspector indent start-indent out callee)
             (view-call t view inspector indent out))
         (newline-if-ends-in-comment out indent)
         (table.insert out ")")
         (table.concat out))))
 
-(local slength (or (-?> (rawget _G :utf8)
-                        (. :len)) #(length $)))
+(local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
 
 (fn maybe-attach-comment [x indent c]
   (if c

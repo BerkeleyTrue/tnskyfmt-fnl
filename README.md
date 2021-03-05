@@ -55,13 +55,16 @@ Strings are formatted using `:colon-notation` where possible, unless
 they consist entirely of punctuation.
 
 Top level forms may or may not have blank lines between them depending on
-whether the input code spaces them out.
+whether the input code spaces them out. Similarly `if` forms and arrow
+forms will occasionally be allowed to be one line if the original code
+had them as one-liners.
 
 ## Known issues
 
-* One-line `if` and threading forms will always get turned into multi-line.
 * When using fnlfmt programmatically, it may modify the AST argument.
 * Macros that aren't built-in are always indented like functions.
+* Preserving multi-line forms doesn't work if the first or second
+  argument is a number, string, boolean, or varg.
 
 ## Contributing
 
