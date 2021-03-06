@@ -45,8 +45,11 @@ notation where possible.
 Calls are formatted differently depending on whether they are calling
 a regular function/macro or whether they're calling a special macro
 which is known to have a "body"; in the latter case every element is
-given its own line, usually indented 2 spaces in. Calls to `match`
-will try to fit their pattern and body on the same line where possible.
+given its own line, usually indented 2 spaces in.
+
+Forms calling `match` and `if` are treated differently; if possible it
+will attempt to pair off their pattern/condition clauses with the body
+on the same line. If that can't fit, it falls back to one-form-per-line.
 
 Strings are formatted using `:colon-notation` where possible, unless
 they consist entirely of punctuation.
@@ -60,12 +63,8 @@ be one line if the original code had them as one-liners.
 
 ## Known issues
 
-* The pattern where you have `if` with its conditions and bodies on
-  the same line is not well-supported.
 * When using fnlfmt programmatically, it may modify the AST argument.
 * Macros that aren't built-in are always indented like functions.
-* Preserving multi-line forms doesn't work if the first or second
-  argument is a number, string, boolean, or varg.
 * Page breaks will not be preserved.
 
 ## Contributing

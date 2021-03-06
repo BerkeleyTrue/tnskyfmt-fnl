@@ -1,4 +1,5 @@
 (local fennel (require :fennel))
+(local unpack (or table.unpack _G.unpack))
 
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
@@ -7,6 +8,11 @@
   (not= 0 (length (icollect [_ v (pairs tbl)]
                     (if (pred v)
                         true)))))
+
+(fn strip-comments [t]
+  (icollect [_ x (ipairs t)]
+    (when (not (fennel.comment? x))
+      x)))
 
 (fn view-fn-args [t view inspector indent start-indent out callee]
   "Named functions need their name and arglists to be on the first line.
@@ -29,17 +35,17 @@ Returns the index of where the body of the function starts."
   (let [last (or (. out (length out)) "")]
     (not (: (last:match "[^\n]*$") :match "[^ ]"))))
 
-(fn break-let? [callee count viewed next-ast indent]
-  (and (= :let callee) (= 1 (math.fmod count 2))
+(fn break-pair? [pair-wise? count viewed next-ast indent]
+  (and pair-wise? (= 1 (math.fmod count 2))
        ;; does the trailing comment fit?
        (not (and (fennel.comment? next-ast)
                  (<= (+ indent 1 (last-line-length viewed) 1
                         (length (tostring next-ast))) 80)))))
 
-(fn view-binding [bindings view inspector start-indent callee]
+(fn view-binding [bindings view inspector start-indent pair-wise? open close]
   "Binding sequences need special care; regular sequence assumptions don't work.
 We want everything to be on one line as much as possible, (except for let)."
-  (let [out ["["]]
+  (let [out [open]]
     (var (indent offset count) (values start-indent 0 1))
     (for [i 1 (length bindings)]
       ;; when a binding has a comment in it, emit it but don't let it throw
@@ -61,14 +67,14 @@ We want everything to be on one line as much as possible, (except for let)."
           (table.insert out viewed)
           (set count (+ count 1))
           (when (< i (length bindings))
-            (if (break-let? callee count viewed (. bindings (+ i 1)) indent)
+            (if (break-pair? pair-wise? count viewed (. bindings (+ i 1)) indent)
                 (do
                   (table.insert out (.. "\n" (string.rep " " start-indent)))
                   (set indent start-indent))
                 (do
                   (set indent (+ indent 1 (last-line-length viewed)))
                   (table.insert out " ")))))))
-    (table.insert out "]")
+    (table.insert out close)
     (table.concat out)))
 
 (local init-bindings {:collect true
@@ -91,10 +97,11 @@ number of handled arguments."
   (let [indent (if (. force-initial-newline callee)
                    start-indent
                    (+ start-indent (length callee)))
-        second (match (and (. init-bindings callee)
-                           (not= :unquote (tostring (. t 2 1))))
-                 true (view-binding (. t 2) view inspector (+ indent 1) callee)
-                 _ (view (. t 2) inspector indent))
+        second (if (and (. init-bindings callee)
+                        (not= :unquote (tostring (. t 2 1))))
+                   (view-binding (. t 2) view inspector (+ indent 1)
+                                 (= :let callee) "[" "]")
+                   (view (. t 2) inspector indent))
         indent2 (+ indent (length (second:match "[^\n]*$")))]
     (when (not= nil (. t 2))
       (table.insert out second))
@@ -130,11 +137,9 @@ number of handled arguments."
         indent (if (. one-element-per-line-forms callee)
                    (+ start-indent (length callee))
                    start-indent)]
-    (for [i (or start-index 99) (length t)]
+    (for [i (or start-index (+ (length t) 1)) (length t)]
       (let [viewed (view (. t i) inspector indent)
             body-indent (+ indent 1 (last-line-length (. out (length out))))]
-        ;; every form except match needs a newline after every form; match needs
-        ;; it after every other form!
         (if (or (match-same-line? callee i out viewed t)
                 (trailing-comment? out viewed body-indent indent))
             (do
@@ -171,12 +176,30 @@ number of handled arguments."
             (table.insert out viewed)
             (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
+(fn view-if [t view inspector indent out]
+  (table.insert out (.. " " (view-binding [(select 2 (unpack t))]
+                                          view inspector indent true "" ""))))
+
+(fn if-pair [view a b c]
+  (.. (view a) " " (view b) (if (fennel.comment? c) (.. " " (view c)) "")))
+
+(fn pairwise-if? [t indent i view]
+  (if (< (length (strip-comments t)) 5) false
+      (not= :if (tostring (. t 1))) false
+      (not (. t i)) true
+      (< 80 (+ indent 1 (length (if-pair view (select i (unpack t)))))) false
+      (pairwise-if? t indent (if (fennel.comment (. t (+ i 2)))
+                                 (+ i 3)
+                                 (+ i 2)) view)))
+
 (fn originally-different-lines? [[_ first second] line]
   (and (= :table (type first)) (= :table (type second))
        (not= line (or first.line line) (or second.line line))))
 
 (fn view-maybe-body [t view inspector indent start-indent out callee]
-  (if (originally-different-lines? t t.line)
+  (if (pairwise-if? t indent 2 view)
+      (view-if t view inspector indent out)
+      (originally-different-lines? t t.line)
       (view-body t view inspector (+ start-indent 2) out callee)
       (view-call t view inspector indent out callee)))
 

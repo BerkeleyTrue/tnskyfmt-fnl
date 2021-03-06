@@ -10,11 +10,10 @@
               :comment
               :sugar
               :skip
-              :macro])
+              :macro
+              :if])
 
 (var pass 0)
-
-(var fail 0)
 
 (fn read [filename]
   (let [f (assert (io.open filename :r))
@@ -22,8 +21,10 @@
     (f:close)
     contents))
 
+(local failures [])
+
 (fn failed [name after actual]
-  (set fail (+ fail 1))
+  (table.insert failures name)
   (print :FAIL name)
   (print "Expected:")
   (print after)
@@ -40,6 +41,7 @@
         (set pass (+ pass 1))
         (failed name expected actual))))
 
-(print (: "%s passed, %s failed" :format pass fail))
-
-(os.exit fail)
+(print (: "%s passed, %s failed" :format pass (length failures)))
+(when (not= 0 (length failures))
+  (print "Failures:" (table.concat failures ", "))
+  (os.exit 1))
