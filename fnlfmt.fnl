@@ -1,6 +1,12 @@
 (local fennel (require :fennel))
 (local unpack (or table.unpack _G.unpack))
 
+;; The basic idea is to run the code thru the parser, set a few overrides on the
+;; __fennelview metamethods of the AST, then run it thru the fennel.view
+;; pretty-printer. The bulk of this file consists of metamethods for lists and
+;; tables which improve on fennel.view's existing logic of how to indent and
+;; where to place newlines.
+
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
 
@@ -42,32 +48,34 @@ Returns the index of where the body of the function starts."
                  (<= (+ indent 1 (last-line-length viewed) 1
                         (length (tostring next-ast))) 80)))))
 
+(fn binding-comment [c indent out start-indent]
+  (when (and (< 80 (+ indent (length (tostring c))))
+             (: (. out (length out)) :match "^[^%s]"))
+    (table.insert out (.. "\n" (string.rep " " start-indent))))
+  (when (and (not (first-thing-in-line? out)) (not= (length out) 1))
+    (table.insert out " "))
+  (table.insert out (tostring c))
+  (table.insert out (.. "\n" (string.rep " " start-indent))))
+
 (fn view-binding [bindings view inspector start-indent pair-wise? open close]
   "Binding sequences need special care; regular sequence assumptions don't work.
 We want everything to be on one line as much as possible, (except for let)."
   (let [out [open]]
-    (var (indent offset count) (values start-indent 0 1))
+    (var (indent offset non-comment-count) (values start-indent 0 1))
     (for [i 1 (length bindings)]
-      ;; when a binding has a comment in it, emit it but don't let it throw
-      ;; off the name/value pair counting
       (while (fennel.comment? (. bindings (+ i offset)))
-        (when (and (< 80 (+ indent
-                            (length (tostring (. bindings (+ i offset))))))
-                   (: (. out (length out)) :match "^[^%s]"))
-          (table.insert out (.. "\n" (string.rep " " start-indent))))
-        (when (and (not (first-thing-in-line? out)) (not= (length out) 1))
-          (table.insert out " "))
-        (table.insert out (view (. bindings (+ i offset))))
-        (table.insert out (.. "\n" (string.rep " " start-indent)))
-        (set indent start-indent)
-        (set offset (+ offset 1)))
+        ;; when a binding has a comment in it, emit it but don't let it throw
+        ;; off the name/value pair counting
+        (binding-comment (. bindings (+ i offset)) indent out start-indent)
+        (set (indent offset) (values start-indent (+ offset 1))))
       (let [i (+ offset i)
             viewed (view (. bindings i) inspector indent)]
         (when (<= i (length bindings))
           (table.insert out viewed)
-          (set count (+ count 1))
+          (set non-comment-count (+ non-comment-count 1))
           (when (< i (length bindings))
-            (if (break-pair? pair-wise? count viewed (. bindings (+ i 1)) indent)
+            (if (break-pair? pair-wise? non-comment-count viewed
+                             (. bindings (+ i 1)) indent)
                 (do
                   (table.insert out (.. "\n" (string.rep " " start-indent)))
                   (set indent start-indent))
@@ -163,20 +171,21 @@ number of handled arguments."
     (+ start-indent (length (viewed:match "[^\n]*$")))))
 
 (fn view-call [t view inspector start-indent out]
-  "Insert arguments to a normal function call."
+  "Insert arguments to a normal function call. "
   (var indent start-indent)
   (for [i 2 (length t)]
     (table.insert out " ")
     (set indent (+ indent 1))
     (let [viewed (view (. t i) inspector (- indent 1))]
+      ;; Attempt to fit as many args on a single line until it gets too long.
       (if (or (fennel.comment? (. t (- i 1)))
-              (and (line-exceeded? inspector indent viewed) (< 2 i)))
+              (and (line-exceeded? inspector indent viewed) (not= 2 i)))
           (set indent (view-with-newline view inspector out t i start-indent))
           (do
             (table.insert out viewed)
             (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
-(fn view-if [t view inspector indent out]
+(fn view-pairwise-if [t view inspector indent out]
   (table.insert out (.. " " (view-binding [(select 2 (unpack t))]
                                           view inspector indent true "" ""))))
 
@@ -198,7 +207,7 @@ number of handled arguments."
 
 (fn view-maybe-body [t view inspector indent start-indent out callee]
   (if (pairwise-if? t indent 2 view)
-      (view-if t view inspector indent out)
+      (view-pairwise-if t view inspector indent out)
       (originally-different-lines? t t.line)
       (view-body t view inspector (+ start-indent 2) out callee)
       (view-call t view inspector indent out callee)))

@@ -6,6 +6,7 @@ Format your Fennel!
 
     $ make # compile fnlfmt script you can place on your $PATH
     $ ./fnlfmt mycode.fnl # prints formatted code to standard out
+    $ ./fnlfmt --fix mycode.fnl # replaces the file with formatted code
     $ curl localhost:8080/my-file.fnl | ./fnlfmt - # pipe to stdin
 
 You can skip reformatting of top-level forms by placing a comment
@@ -66,6 +67,17 @@ be one line if the original code had them as one-liners.
 * When using fnlfmt programmatically, it may modify the AST argument.
 * Macros that aren't built-in are always indented like functions.
 * Page breaks will not be preserved.
+
+## Other functionality
+
+The file `indentation.fnl` contains functionality for implementing
+heuristic-based indentation which does not use a parser. This can be
+useful for text editors where you want to be able to indent even in
+cases where the code does not parse because it's incomplete.
+
+The file `macrodebug.fnl` contains a replacement for Fennel's
+`macrodebug` function which pretty-prints the macroexpansion using the
+full formatter.
 
 ## Contributing
 

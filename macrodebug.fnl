@@ -2,11 +2,9 @@
 ;; Also contains macros for patching macrodebug in the root compiler scoop
 ;; and restoring the original.
 
-(local *macros* [])
-
 ;; macros
 
-(fn *macros*.pretty-macrodebug [expr return-string?]
+(fn pretty-macrodebug [expr return-string?]
   "Patched version of Fennel's macrodebug that calls fnlfmt on the expanded form."
   (let [warn (fn [msg ...]
                (io.stderr:write (.. "Warning: " msg "\n"))
@@ -22,7 +20,7 @@
         out
         (print (pick-values 1 (string.gsub out "\n$" ""))))))
 
-(fn *macros*.restore-default []
+(fn restore-default []
   "Resets macrodebug to the built-in version."
   (var root-scope _SCOPE)
   (while root-scope.parent
@@ -32,7 +30,7 @@
     (set (core-macros.macrodebug core-macros.-macrodebug)
          (values core-macros.-macrodebug nil))))
 
-(fn *macros*.inject []
+(fn inject []
   "Globally patches Fennel's macrodebug with fnlfmt's drop-in replacement.
 The original macrodebug is accessible as -macrodebug, and can be restored
 with restore-default-macrodebug"
@@ -47,4 +45,6 @@ with restore-default-macrodebug"
     (set core-macros.macrodebug pretty-macrodebug)
     (set core-macros.-macrodebug default-macrodebug)))
 
-*macros*
+{: pretty-macrodebug
+ : restore-default
+ : inject}
