@@ -2,7 +2,7 @@
 
 (set debug.traceback fennel.traceback)
 
-(local {: format-file} (require :fnlfmt))
+(local {: format-file : version} (require :fnlfmt))
 
 (fn help []
   (print "Usage: fnlfmt [--no-comments] [--fix] FILENAME")
@@ -17,6 +17,7 @@
     (table.remove arg i)))
 
 (match arg
+  [:--version] (print (.. "fnlfmt version " version))
   [:--fix filename nil] (let [new (format-file filename options)
                               f (assert (io.open filename :w))]
                           (f:write new)
