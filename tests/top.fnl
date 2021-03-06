@@ -22,8 +22,6 @@
 (local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
 
 (fn abc []
-  (var x 1)
-
   (fn xyz []
     123)
 
@@ -33,3 +31,10 @@
   (.. (xyz) (def))
   (fn []
     :return-a-function))
+
+(fn abc2 []
+  "this function returns abc"
+  (fn r []
+    :abc)
+
+  (r))

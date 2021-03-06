@@ -9,7 +9,7 @@ Format your Fennel!
     $ curl localhost:8080/my-file.fnl | ./fnlfmt - # pipe to stdin
 
 You can skip reformatting of top-level forms by placing a comment
-before them:
+before them. This does not work for nested forms.
 
 ```fennel
 (fn this-function [can be formatted ...]
@@ -52,9 +52,11 @@ Strings are formatted using `:colon-notation` where possible, unless
 they consist entirely of punctuation.
 
 Top level forms may or may not have blank lines between them depending on
-whether the input code spaces them out. Similarly `if` forms and arrow
-forms will occasionally be allowed to be one line if the original code
-had them as one-liners.
+whether the input code spaces them out. Functions defined inside a
+body form get empty lines spacing them out as well.
+
+Similarly `if` forms and arrow forms will occasionally be allowed to
+be one line if the original code had them as one-liners.
 
 ## Known issues
 

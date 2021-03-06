@@ -9,7 +9,8 @@
                         true)))))
 
 (fn view-fn-args [t view inspector indent start-indent out callee]
-  "Named functions need their name and arglists to be on the first line."
+  "Named functions need their name and arglists to be on the first line.
+Returns the index of where the body of the function starts."
   (if (fennel.sym? (. t 2))
       (let [third (view (. t 3) inspector (+ indent 1))]
         (table.insert out " ")
@@ -77,6 +78,8 @@ We want everything to be on one line as much as possible, (except for let)."
                       :let true
                       :with-open true})
 
+(local fn-forms {:fn true :lambda true "λ" true :macro true})
+
 (local force-initial-newline {:do true :eval-compiler true})
 
 (fn view-init-body [t view inspector start-indent out callee]
@@ -95,7 +98,7 @@ number of handled arguments."
         indent2 (+ indent (length (second:match "[^\n]*$")))]
     (when (not= nil (. t 2))
       (table.insert out second))
-    (if (. {:fn true :lambda true "λ" true :macro true} callee)
+    (if (. fn-forms callee)
         (view-fn-args t view inspector indent2 start-indent out callee)
         3)))
 
@@ -114,8 +117,10 @@ number of handled arguments."
                                    :-?>> true
                                    :if true})
 
-(fn space-out-fns? [prev viewed]
-  (or (prev:match "^ *%(fn [^%[]") (viewed:match "^ *%(fn [^%[]")))
+(fn space-out-fns? [prev viewed start-index i]
+  ;; functions inside a body form shouldn't be spaced if they're the first thing
+  (and (not (= start-index i))
+       (or (prev:match "^ *%(fn [^%[]") (viewed:match "^ *%(fn [^%[]"))))
 
 (fn view-body [t view inspector start-indent out callee]
   "Insert arguments to a call to a special that takes body arguments."
@@ -136,7 +141,7 @@ number of handled arguments."
               (table.insert out " ")
               (table.insert out (view (. t i) inspector body-indent)))
             (do
-              (when (space-out-fns? (. out (length out)) viewed)
+              (when (space-out-fns? (. out (length out)) viewed start-index i)
                 (table.insert out "\n"))
               (table.insert out (.. "\n" (string.rep " " indent)))
               (table.insert out viewed)))))))
@@ -345,4 +350,3 @@ When f returns a truthy value, recursively walks the children."
     (table.concat out "\n")))
 
 {: fnlfmt : format-file :version :0.1.0-dev}
-
