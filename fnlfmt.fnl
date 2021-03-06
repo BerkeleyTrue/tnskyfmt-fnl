@@ -12,8 +12,7 @@
 
 (fn any? [tbl pred]
   (not= 0 (length (icollect [_ v (pairs tbl)]
-                    (if (pred v)
-                        true)))))
+                    (if (pred v) true)))))
 
 (fn strip-comments [t]
   (icollect [_ x (ipairs t)]
@@ -43,8 +42,7 @@ Returns the index of where the body of the function starts."
 
 (fn break-pair? [pair-wise? count viewed next-ast indent]
   (and pair-wise? (= 1 (math.fmod count 2))
-       ;; does the trailing comment fit?
-       (not (and (fennel.comment? next-ast)
+       (not (and (fennel.comment? next-ast) ; does the trailing comment fit?
                  (<= (+ indent 1 (last-line-length viewed) 1
                         (length (tostring next-ast))) 80)))))
 
@@ -186,8 +184,9 @@ number of handled arguments."
             (set indent (+ indent (length (viewed:match "[^\n]*$")))))))))
 
 (fn view-pairwise-if [t view inspector indent out]
-  (table.insert out (.. " " (view-binding [(select 2 (unpack t))]
-                                          view inspector indent true "" ""))))
+  (table.insert out (.. " "
+                        (view-binding [(select 2 (unpack t))] view inspector
+                                      indent true "" ""))))
 
 (fn if-pair [view a b c]
   (.. (view a) " " (view b) (if (fennel.comment? c) (.. " " (view c)) "")))
@@ -237,15 +236,9 @@ number of handled arguments."
                       :with-open true
                       "λ" true})
 
-(local maybe-body {:-> true
-                   :->> true
-                   :-?> true
-                   :-?>> true
-                   :doto true
-                   :if true})
+(local maybe-body {:-> true :->> true :-?> true :-?>> true :doto true :if true})
 
-(local renames {"#" :length
-                "~=" :not=})
+(local renames {"#" :length "~=" :not=})
 
 (fn view-list [t view inspector start-indent]
   (if (. sugars (tostring (. t 1)))
@@ -280,8 +273,7 @@ number of handled arguments."
 
 (fn view-pair [t view inspector indent mt key]
   (let [val (. t key)
-        k (if (shorthand-pair? key val)
-              ":"
+        k (if (shorthand-pair? key val) ":"
               (view key inspector (+ indent 1) true))
         v (view val inspector (+ indent (slength k) 1))]
     (.. (maybe-attach-comment k indent (. mt.comments.keys key)) " "
@@ -315,6 +307,7 @@ When f returns a truthy value, recursively walks the children."
     (when (f idx node parent)
       (each [k v (iterfn node)]
         (walk iterfn node k v))))
+
   (walk (or custom-iterator pairs) nil nil root)
   root)
 

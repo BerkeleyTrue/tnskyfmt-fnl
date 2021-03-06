@@ -26,7 +26,7 @@ Returns nil if the given line doesn't open any form; in that case the caller
 should continue looking to previous lines."
   (let [closers {")" "(" "]" "[" "}" "{" "\"" "\""}
         char (line:sub pos pos)
-        looking-for (. stack (# stack))
+        looking-for (. stack (length stack))
         continue #(identify-line line (- pos 1) stack)]
     (if (= 0 pos)
         nil
@@ -35,13 +35,15 @@ should continue looking to previous lines."
         (continue)
         ;; if we find the delimiter we're looking for, stop looking
         (= looking-for char)
-        (do (table.remove stack)
-            (continue))
+        (do
+          (table.remove stack)
+          (continue))
         ;; if we find a new form, start looking for the delimiter that begins it
         (and (. closers char) ;; (unless we're already in a string)
              (not= looking-for "\""))
-        (do (table.insert stack (. closers char))
-            (continue))
+        (do
+          (table.insert stack (. closers char))
+          (continue))
         ;; if we're looking for a delimiter, skip everything till we find it
         looking-for
         (continue)
@@ -77,13 +79,13 @@ should continue looking to previous lines."
                       :icollect true})
 
 (fn remove-comment [line in-string? pos]
-  (if (< (# line) pos)
+  (if (< (length line) pos)
       line
       (= (line:sub pos pos) "\"")
       (remove-comment line (not in-string?) (+ pos 1))
       (and (= (line:sub pos pos) ";") (not in-string?))
       (line:sub 1 (- pos 1))
-      ; could hit false positives in multi-line strings
+      ;; could hit false positives in multi-line strings
       (remove-comment line in-string? (+ pos 1))))
 
 (fn identify-indent-type [lines last stack]
@@ -91,7 +93,7 @@ should continue looking to previous lines."
 This function iterates backwards thru a table of lines to find where the current
 form begins. Also returns details about the position in the line."
   (let [line (remove-comment (or (. lines last) "") false 1)]
-    (match (identify-line line (# line) stack)
+    (match (identify-line line (length line) stack)
       (:table pos) (values :table pos)
       (:call pos line) (let [function-name (symbol-at line (+ pos 1))]
                          (if (. body-specials function-name)
@@ -107,7 +109,7 @@ looked up in the table of lines. Returns the column number to indent to."
   (match (identify-indent-type lines prev-line-num [])
     (:table opening) opening
     (:body-special prev-indent) (+ prev-indent 2)
-    (:call prev-indent function-name) (+ prev-indent (# function-name) 2)
+    (:call prev-indent function-name) (+ prev-indent (length function-name) 2)
     _ 0))
 
 (fn indent-line [line lines prev-line-num]
@@ -120,7 +122,7 @@ looked up in the table of lines. Returns the column number to indent to."
   "Reformat an entire block of code."
   (let [lines []]
     (each [line (code:gmatch "([^\n]*)\n")]
-      (table.insert lines (indent-line line lines (# lines))))
+      (table.insert lines (indent-line line lines (length lines))))
     (table.concat lines "\n")))
 
 {: indent : indentation}

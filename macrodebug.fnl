@@ -45,6 +45,4 @@ with restore-default-macrodebug"
     (set core-macros.macrodebug pretty-macrodebug)
     (set core-macros.-macrodebug default-macrodebug)))
 
-{: pretty-macrodebug
- : restore-default
- : inject}
+{: pretty-macrodebug : restore-default : inject}
