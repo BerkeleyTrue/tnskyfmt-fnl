@@ -622,6 +622,20 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
   local function colon_string_3f(s)
     return s:find("^[-%w?\\^_!$%&*+./@|<=>]+$")
   end
+  local function pp_string(str, options, indent)
+    local escs = nil
+    local _2_
+    if (options["escape-newlines?"] and (#str < (options["line-length"] - indent))) then
+      _2_ = "\\n"
+    else
+      _2_ = "\n"
+    end
+    local function _4_(_241, _242)
+      return ("\\%03d"):format(_242:byte())
+    end
+    escs = setmetatable({["\""] = "\\\"", ["\11"] = "\\v", ["\12"] = "\\f", ["\13"] = "\\r", ["\7"] = "\\a", ["\8"] = "\\b", ["\9"] = "\\t", ["\\"] = "\\\\", ["\n"] = _2_}, {__index = _4_})
+    return ("\"" .. str:gsub("[%c\\\"]", escs) .. "\"")
+  end
   local function make_options(t, options)
     local defaults = {["detect-cycles?"] = true, ["empty-as-sequence?"] = false, ["escape-newlines?"] = false, ["line-length"] = 80, ["metamethod?"] = true, ["one-line?"] = false, ["prefer-colon?"] = false, ["utf8?"] = true, depth = 128}
     local overrides = {appearances = count_table_appearances(t, {}), level = 0, seen = {len = 0}}
@@ -662,16 +676,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
       if ((tv == "string") and colon_string_3f(x) and _5_()) then
         return (":" .. x)
       elseif (tv == "string") then
-        local _6_0 = nil
-        local function _7_()
-          if (options0["escape-newlines?"] and (#x < (options0["line-length"] - indent0))) then
-            return "\\n"
-          else
-            return "\n"
-          end
-        end
-        _6_0 = string.format("%q", x):gsub("\\\n", _7_())
-        return _6_0
+        return pp_string(x, options0, indent0)
       elseif ((tv == "boolean") or (tv == "nil")) then
         return tostring(x)
       else
@@ -2972,8 +2977,17 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
           return nil
         elseif ((type(_0_0) == "table") and (nil ~= _0_0.prefix)) then
           local prefix = _0_0.prefix
-          table.remove(stack)
-          return dispatch(utils.list(utils.sym(prefix), v))
+          local source = nil
+          do
+            local _1_0 = table.remove(stack)
+            _1_0["byteend"] = byteindex
+            source = _1_0
+          end
+          local list = utils.list(utils.sym(prefix, source), v)
+          for k, v0 in pairs(source) do
+            list[k] = v0
+          end
+          return dispatch(list)
         elseif (nil ~= _0_0) then
           local top = _0_0
           whitespace_since_dispatch = false
@@ -3129,7 +3143,7 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
         return dispatch(load_fn())
       end
       local function parse_prefix(b)
-        table.insert(stack, {prefix = prefixes[b]})
+        table.insert(stack, {bytestart = byteindex, filename = filename, line = line, prefix = prefixes[b]})
         local nextb = getb()
         if (whitespace_3f(nextb) or (true == delims[nextb])) then
           if (b ~= 35) then
@@ -3732,7 +3746,7 @@ do
   expands to
     (fn [_0_ _1_] (func _0_ _1_))"
     (assert (and (= (type n) :number) (= n (math.floor n)) (>= n 0))
-            "Expected n to be an integer literal >= 0.")
+            (.. "Expected n to be an integer literal >= 0, got " (tostring n)))
     (let [bindings []]
       (for [i 1 n] (tset bindings i (gensym)))
       `(fn ,bindings (,f ,(unpack bindings)))))
@@ -3746,7 +3760,7 @@ do
     (let [(_0_ _1_) ...]
       (values _0_ _1_))"
     (assert (and (= :number (type n)) (>= n 0) (= n (math.floor n)))
-            "Expected n to be an integer >= 0")
+            (.. "Expected n to be an integer >= 0, got " (tostring n)))
     (let [let-syms   (list)
           let-values (if (= 1 (select :# ...)) ... `(values ,...))]
       (for [i 1 n] (table.insert let-syms (gensym)))

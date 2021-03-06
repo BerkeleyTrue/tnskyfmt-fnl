@@ -291,7 +291,7 @@ When f returns a truthy value, recursively walks the children."
 (fn prefer-colon? [s]
   ;; it has to be a legal colon-string, but it shouldn't be *just* punctuation
   (and (s:find "^[-%w?^_!$%&*+./@|<=>]+$")
-       (not (s:find "^[-?^_!$%&*+./@|<=>]+$"))))
+       (not (s:find "^[-?^_!$%&*+./@|<=>%\\]+$"))))
 
 (fn fnlfmt [ast]
   "Return a formatted representation of ast."
