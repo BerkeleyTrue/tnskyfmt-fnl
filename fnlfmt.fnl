@@ -276,8 +276,8 @@ number of handled arguments."
         k (if (shorthand-pair? key val) ":"
               (view key inspector (+ indent 1) true))
         v (view val inspector (+ indent (slength k) 1))]
-    (.. (maybe-attach-comment k indent (. mt.comments.keys key)) " "
-        (maybe-attach-comment v indent (. mt.comments.values val)))))
+    (.. (maybe-attach-comment k indent (?. mt :comments :keys key)) " "
+        (maybe-attach-comment v indent (?. mt :comments :values val)))))
 
 (fn view-multiline-kv [pair-strs indent last-comment]
   (if last-comment
@@ -292,12 +292,12 @@ number of handled arguments."
 know what to do with : foo shorthand notation, and it doesn't emit comments."
   (let [indent (+ indent 1)
         mt (getmetatable t)
-        pair-strs (icollect [_ k (ipairs mt.keys)]
+        pair-strs (icollect [_ k (ipairs (or mt.keys []))]
                     (view-pair t view inspector indent mt k))
         oneline (.. "{" (table.concat pair-strs " ") "}")]
-    (if (or (oneline:match "\n") mt.comments.last
+    (if (or (oneline:match "\n") (?. mt :comments :last)
             (> (+ indent (length oneline)) inspector.line-length))
-        (view-multiline-kv pair-strs indent mt.comments.last)
+        (view-multiline-kv pair-strs indent (?. mt :comments :last))
         oneline)))
 
 (fn walk-tree [root f custom-iterator]
@@ -315,7 +315,11 @@ When f returns a truthy value, recursively walks the children."
   (when (and (= :table (type form)) (not (fennel.sym? form))
              (not (fennel.comment? form)) (not= (fennel.varg) form))
     (when (and (not (fennel.list? form)) (not (fennel.sequence? form)))
-      (tset (getmetatable form) :__fennelview view-kv))
+      ;; Fennel's parser will always set the metatable, but we could get tables
+      ;; from other places.
+      (match (getmetatable form)
+        mt (tset mt :__fennelview view-kv)
+        _ (setmetatable form {:__fennelview view-kv})))
     true))
 
 (fn prefer-colon? [s]
