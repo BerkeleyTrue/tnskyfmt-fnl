@@ -292,7 +292,9 @@ number of handled arguments."
 know what to do with : foo shorthand notation, and it doesn't emit comments."
   (let [indent (+ indent 1)
         mt (getmetatable t)
-        pair-strs (icollect [_ k (ipairs (or mt.keys []))]
+        keys (or mt.keys (icollect [k (pairs t)]
+                           k))
+        pair-strs (icollect [_ k (ipairs keys)]
                     (view-pair t view inspector indent mt k))
         oneline (.. "{" (table.concat pair-strs " ") "}")]
     (if (or (oneline:match "\n") (?. mt :comments :last)
