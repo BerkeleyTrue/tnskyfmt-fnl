@@ -1,5 +1,9 @@
 # History of user-visible changes
 
+## 0.2.1 / 2021-03-07
+
+* Be more forgiving of ASTs which lack source metadata.
+
 ## 0.2.0 / 2021-03-06
 
 * Complete rewrite which uses Fennel's own parser and pretty-printer.
