@@ -374,4 +374,4 @@ When f returns a truthy value, recursively walks the children."
     (table.insert out "")
     (table.concat out "\n")))
 
-{: fnlfmt : format-file :version :0.2.0}
+{: fnlfmt : format-file :version :0.2.1-dev}
