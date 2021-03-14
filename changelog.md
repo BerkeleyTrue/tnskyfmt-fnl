@@ -1,5 +1,9 @@
 # History of user-visible changes
 
+## 0.2.2 / ???
+
+* Fix a bug with multiple lines of sequential comments in kv tables.
+
 ## 0.2.1 / 2021-03-07
 
 * Be more forgiving of ASTs which lack source metadata.

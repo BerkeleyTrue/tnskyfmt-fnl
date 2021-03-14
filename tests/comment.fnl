@@ -21,3 +21,11 @@
                    (+ start-indent 2)
                    start-indent)]
     12))
+
+(print {:this table
+        ;; has a comment
+        ;; with multiple lines in it!!!
+        :and "we don't want to lose the comments"
+        ;; so let's keep them; all the comments are good and we want them
+        ;; to be kept
+        })

@@ -263,9 +263,11 @@ number of handled arguments."
 
 (local slength (or (-?> (rawget _G :utf8) (. :len)) #(length $)))
 
-(fn maybe-attach-comment [x indent c]
-  (if c
-      (.. (tostring c) "\n" (string.rep " " indent) x)
+(fn maybe-attach-comment [x indent cs]
+  (if (and cs (< 0 (length cs)))
+      (.. (table.concat (icollect [_ c (ipairs cs)]
+                          (tostring c)) (.. "\n" (string.rep " " indent)))
+          (.. "\n" (string.rep " " indent)) x)
       x))
 
 (fn shorthand-pair? [k v]
@@ -279,12 +281,14 @@ number of handled arguments."
     (.. (maybe-attach-comment k indent (?. mt :comments :keys key)) " "
         (maybe-attach-comment v indent (?. mt :comments :values val)))))
 
-(fn view-multiline-kv [pair-strs indent last-comment]
-  (if last-comment
-      (.. "{" (table.concat (doto pair-strs
-                              (table.insert (tostring last-comment))
-                              (table.insert "}"))
-                            (.. "\n" (string.rep " " indent))))
+(fn view-multiline-kv [pair-strs indent last-comments]
+  (if (< 0 (length last-comments))
+      (do
+        (each [_ c (ipairs last-comments)]
+          (table.insert pair-strs (tostring c)))
+        (table.insert pair-strs "}")
+        (.. "{" (table.concat pair-strs
+                              (.. "\n" (string.rep " " indent)))))
       (.. "{" (table.concat pair-strs (.. "\n" (string.rep " " indent))) "}")))
 
 (fn view-kv [t view inspector indent]
@@ -297,7 +301,7 @@ know what to do with : foo shorthand notation, and it doesn't emit comments."
         pair-strs (icollect [_ k (ipairs keys)]
                     (view-pair t view inspector indent mt k))
         oneline (.. "{" (table.concat pair-strs " ") "}")]
-    (if (or (oneline:match "\n") (?. mt :comments :last)
+    (if (or (oneline:match "\n") (?. mt :comments :last 1)
             (> (+ indent (length oneline)) inspector.line-length))
         (view-multiline-kv pair-strs indent (?. mt :comments :last))
         oneline)))
