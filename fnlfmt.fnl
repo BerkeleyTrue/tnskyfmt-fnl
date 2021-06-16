@@ -7,6 +7,8 @@
 ;; tables which improve on fennel.view's existing logic of how to indent and
 ;; where to place newlines.
 
+(local syntax (fennel.syntax))
+
 (fn last-line-length [line]
   (length (line:match "[^\n]*$")))
 
@@ -83,13 +85,6 @@ We want everything to be on one line as much as possible, (except for let)."
     (table.insert out close)
     (table.concat out)))
 
-(local init-bindings {:collect true
-                      :each true
-                      :for true
-                      :icollect true
-                      :let true
-                      :with-open true})
-
 (local fn-forms {:fn true :lambda true "λ" true :macro true})
 
 (local force-initial-newline {:do true :eval-compiler true})
@@ -103,7 +98,7 @@ number of handled arguments."
   (let [indent (if (. force-initial-newline callee)
                    start-indent
                    (+ start-indent (length callee)))
-        second (if (and (. init-bindings callee)
+        second (if (and (?. syntax callee :binding-form?)
                         (not= :unquote (tostring (. t 2 1))))
                    (view-binding (. t 2) view inspector (+ indent 1)
                                  (= :let callee) "[" "]")
@@ -220,22 +215,6 @@ number of handled arguments."
 (fn sweeten [t view inspector indent view-list]
   (.. (. sugars (tostring (. t 1))) (view (. t 2) inspector (+ indent 1))))
 
-(local body-specials {:collect true
-                      :do true
-                      :each true
-                      :eval-compiler true
-                      :fn true
-                      :for true
-                      :icollect true
-                      :lambda true
-                      :let true
-                      :macro true
-                      :match true
-                      :when true
-                      :while true
-                      :with-open true
-                      "λ" true})
-
 (local maybe-body {:-> true :->> true :-?> true :-?>> true :doto true :if true})
 
 (local renames {"#" :length "~=" :not=})
@@ -246,11 +225,11 @@ number of handled arguments."
       (let [callee (view (. t 1) inspector (+ start-indent 1))
             callee (or (. renames callee) callee)
             out ["(" callee]
-            indent (if (. body-specials callee)
+            indent (if (?. syntax callee :body-form?)
                        (+ start-indent 2)
                        (+ start-indent (length callee) 2))]
         ;; indent differently if it's calling a special form with body args
-        (if (. body-specials callee)
+        (if (?. syntax callee :body-form?)
             (view-body t view inspector indent out callee)
             ;; in some cases we treat it differently depending on whether the
             ;; original code was multi-line or not
@@ -384,4 +363,4 @@ When f returns a truthy value, recursively walks the children."
     (table.insert out "")
     (table.concat out "\n")))
 
-{: fnlfmt : format-file :version :0.2.1}
+{: fnlfmt : format-file :version :0.2.2-dev}
