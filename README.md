@@ -81,7 +81,7 @@ full formatter.
 
 ## Contributing
 
-Send patches directly to the maintainer or the
+Send patches or bug reports directly to the maintainer or the
 [Fennel mailing list](https://lists.sr.ht/%7Etechnomancy/fennel).
 
 ## License

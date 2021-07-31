@@ -23,5 +23,6 @@ for the newline would push it way over the limit")
 
 xyz
 
-(let [what-is "a\"quoted string"]
+(let [what-is "a\"quoted string"
+      another "@string"]
   this-is-weird)
