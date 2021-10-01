@@ -1,6 +1,6 @@
 # History of user-visible changes
 
-## 0.2.2 / ???
+## 0.2.2 / 2021-10-01
 
 * Fix a bug with multiple lines of sequential comments in kv tables.
 
